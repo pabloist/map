@@ -58,7 +58,7 @@ const Map = () => {
   const [coordenadasFinal, setCoordenadasFinal] = useState(null);
   const [partida, setPartida] = useState(null);
   const [final, setFinal] = useState(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [interpolatedPoints, setInterpolatedPoints] = useState([])
   const [polygons, setPolygons] = useState([]);
   const [distanciaEval, setDistanciaEval] = useState([5000]);
@@ -99,12 +99,16 @@ const Map = () => {
   const fuente = 'Arial, sans-serif';
   const [open, setOpen] = useState(false); // Estado para controlar el popup
   const [open2, setOpen2] = useState(false); // Estado para controlar el popup
-  const [COVOpen, setCOVOpen] = useState(false); // Estado para controlar el popup
   const pesoFuente = 600
   const vehiculosOptions = vehiculos.map(vehiculo => ({
     value: vehiculo, // The value to be used in the select
     label: vehiculo.marca + " | " +vehiculo.modelo, // The label displayed to the user
   }));
+  
+
+  const toggleVisibility = () => {
+    setIsVisible(!isVisible);
+  };
 
   const handleTooltipOpen = () => {
     setOpen(true);
@@ -112,14 +116,6 @@ const Map = () => {
 
   const handleTooltipClose = () => {
     setOpen(false);
-  };
-
-  const handleCOVOpen= () => {
-    setCOVOpen(true);
-  };
-
-  const handleCOVClose= () => {
-    setCOVOpen(false);
   };
 
   const handleTooltipOpen2 = () => {
@@ -206,7 +202,6 @@ const Map = () => {
 
   // Generar ruta desde el punto inicial al punto final. ARREGLAR SINCRONISMO
   const handleGenerateRoute = (event) => {
-    setAutonomia(2)
     codePartida();
     codeFinal();
     setWaypoints([coordenadasPartida, coordenadasFinal]);
@@ -950,26 +945,6 @@ const handleCargador = (selectedOptions) => {
   // Example: Do something with the selected options
 };
 
-const marks = [
-  {
-    value: 80,
-    label: '80 km.',
-  },
-  {
-    value: 580,
-    label: '580 km.',
-  },
-  {
-    value: 330,
-    label: '330 km.',
-  },
-];
-
-
-function valuetext(value) {
-  return `${value}°C`;
-}
-
   return (
     
     <div>
@@ -998,13 +973,13 @@ function valuetext(value) {
             E - MAP Centro de Energía UC
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            <button onClick={() => setIsVisible(true)}>
+            <button onClick={toggleVisibility}>
               Explorador
             </button>
           </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-          <button onClick={() => setIsVisible(false)}>
+            <button onClick={toggleVisibility}>
               Planificador de ruta
 
   
@@ -1056,8 +1031,8 @@ function valuetext(value) {
   style={{
     position: 'absolute',
     backgroundColor: colorContExt,
-    width: '27%',
-    height: '65%',
+    width: 410,
+    height: 555,
     top: '10%',
     left: '10%',
     zIndex: isVisible ? 1000 : 0, // Lower zIndex when hidden
@@ -1082,8 +1057,8 @@ function valuetext(value) {
   <div
     style={{
       background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`, // Correct usage of backticks
-      width: '90%',
-      height: '90%',
+      width: 380,
+      height: 480,
       borderRadius: '20px',
     }}
   >
@@ -1101,11 +1076,8 @@ function valuetext(value) {
           value={autonomia}
           min={80}
           max={580}
-          aria-label="Custom marks"
           onChange={handleChange}
           valueLabelDisplay="auto" // Only show the label when active (hover or during drag)
-          getAriaValueText={valuetext}
-          marks={marks}
           sx={{
             color: colorBtn,
             height: 8,
@@ -1238,7 +1210,6 @@ function valuetext(value) {
         label="Vehiculo Modelo"
         onChange={handleSelectVehiculo}
         options = {vehiculosOptions}
-        placeholder = "Seleccionar desde base de datos..."
         styles={{
           container: (base) => ({
             ...base,
@@ -1448,27 +1419,6 @@ function valuetext(value) {
   }}
 >
     <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center">Indique tipo de cargador o vehículo </Typography>
-    <Tooltip
-        title={
-          <span style={{ whiteSpace: 'pre-line' }}>
-            Al seleccionar uno o varios tipos de cargador, filtra los puntos de carga que posean al menos 1 cargador de acuerdo a los seleccionados.{"\n"}{"\n"}
-            Al seleccionar un vehículo de la base de datos se ingresa de forma directa los tipos de cargadores adecuados para dicho vehículo, al igual que la autonomía de fábrica.
-          </span>
-        }
-        open={COVOpen}
-        onClose={handleCOVClose}
-        onOpen={handleCOVOpen}
-        leaveDelay={200}
-        arrow // Muestra una flecha en el tooltip
-      >
-        <IconButton
-          size="small"
-          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
-          onClick={handleCOVOpen}
-        >
-          <HelpOutlineIcon style={{ color: '#00796B' }} />
-        </IconButton>
-      </Tooltip>
     <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
 
       <Select
@@ -1711,22 +1661,19 @@ function valuetext(value) {
 
     <Grid container style={{ width: '80%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <button
-              onClick={handleGenerateRoute}
-              style={{
-                backgroundColor: colorBtn,
-                color: colorTxtBtn,
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                margin: '4px',
-                fontSize: '14px',
-                cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
-                opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
-              }}
-              disabled={!partida || !final}  // Deshabilitar si partida o final son null
-            >
-              Mostrar ruta
-            </button>
+            onClick={handleGenerateRoute}
+            style={{
+              backgroundColor: colorBtn,
+              color: colorTxtBtn,
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px', // Reduced padding for smaller buttons
+              margin: '4px', // Reduced margin for smaller spacing
+              fontSize: '14px', // Optional: Adjust font size for smaller appearance
+            }}
+          >
+            Mostrar ruta
+          </button>
 
           <button
             onClick={filterLocationsBetweenConsecutivePoints}
@@ -1738,10 +1685,7 @@ function valuetext(value) {
               padding: '4px 8px', // Reduced padding for smaller buttons
               margin: '4px', // Reduced margin for smaller spacing
               fontSize: '14px', // Optional: Adjust font size for smaller appearance
-              cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
-              opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
             }}
-            disabled={!partida || !final}  // Deshabilitar si partida o final son null
           >
             Puntos en ruta
           </button>
@@ -1756,10 +1700,7 @@ function valuetext(value) {
               padding: '4px 8px', // Reduced padding for smaller buttons
               margin: '4px', // Reduced margin for smaller spacing
               fontSize: '14px', // Optional: Adjust font size for smaller appearance
-              cursor: soc && autonomy ? 'pointer' : 'not-allowed',  // Cambia el cursor
-              opacity: soc && autonomy ? 1 : 0.5,  // Opacidad cuando está deshabilitado
             }}
-            disabled={!soc || !autonomy} 
           >
             Optimizar
           </button>

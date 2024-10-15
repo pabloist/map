@@ -26,6 +26,8 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
+import Bloodhound from 'typeahead.js/dist/typeahead.bundle.min';
+import $ from 'jquery';
 import Autocomplete from "react-google-autocomplete";
 import axios from 'axios';
 import { Grid, TextField} from '@mui/material';
@@ -35,8 +37,8 @@ import { styled } from '@mui/material/styles';
 import Select, { StylesConfig } from 'react-select';
 import 'lrm-google';
 import 'leaflet-geometryutil'; // Import GeometryUtil
+import * as pip from 'leaflet-pip'; // Import leaflet-pip
 import { FaStar } from 'react-icons/fa';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 
 
@@ -54,28 +56,29 @@ const Map = () => {
   const [anchorElUser, setAnchorElUser] = React.useState(null);
   const pages = ['Products', 'Pricing', 'Blog'];
   const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+  const [address, setAddress] = useState(null);
   const [coordenadasPartida, setCoordenadasPartida] = useState(null);
   const [coordenadasFinal, setCoordenadasFinal] = useState(null);
   const [partida, setPartida] = useState(null);
   const [final, setFinal] = useState(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [interpolatedPoints, setInterpolatedPoints] = useState([])
   const [polygons, setPolygons] = useState([]);
   const [distanciaEval, setDistanciaEval] = useState([5000]);
   const [anchoEval, setAnchoEval] = useState([2000]);
   const [locationsWithSegments, setLocationsWithSegments] = useState({});
+  const [furthestSegment, setFurthestSegment] = useState({});
   const [furthestSegments, setFurthestSegments] = useState([]);
   const [comments, setComments] = useState({});
-  const [autonomia, setAutonomia] = useState(2);
+  const [autonomia, setAutonomia] = useState(0.8);
   const [ratings, setRatings] = useState({});
   const [commentHistory, setCommentHistory] = useState({});
   const [selectedOptions, setSelectedOptions] = useState([]);
+  const [optimos, setOptimos] = useState([]);
   const [autonomy, setAutonomy] = useState(null);
   const [soc, setSoc] = useState(null);
   const [vehiculos, setvehiculos] = useState([]);
   const [selectedVehiculo, setSelectedVehiculo] = useState();
-  const [chargerNames, setChargerNames] = useState([]);
-
   const cargadores = [
     { value: 'T1', label: 'T1' },
     { value: 'T2', label: 'T2' },
@@ -86,7 +89,7 @@ const Map = () => {
   ];
   const colorLetras = "#03045E";
   const colorBarra1 = '#48CAE4'; // Color de la barra de opciones
-  const colorBarra2 = "cyan";  // Segundo color de degradado de la barra de APP
+  const colorBarra2 = "white";  // Segundo color de degradado de la barra de APP
   const colorContExt = '#CAF0F8';  // Color del elemento externo
   const colorContBord = "blue";
   const colorContInt1 = '#56CFE1';
@@ -97,38 +100,16 @@ const Map = () => {
   const colorTxtBtn = "white";
   const colorTxtInt = "gray";
   const fuente = 'Arial, sans-serif';
-  const [open, setOpen] = useState(false); // Estado para controlar el popup
-  const [open2, setOpen2] = useState(false); // Estado para controlar el popup
-  const [COVOpen, setCOVOpen] = useState(false); // Estado para controlar el popup
   const pesoFuente = 600
   const vehiculosOptions = vehiculos.map(vehiculo => ({
     value: vehiculo, // The value to be used in the select
     label: vehiculo.marca + " | " +vehiculo.modelo, // The label displayed to the user
   }));
 
-  const handleTooltipOpen = () => {
-    setOpen(true);
+  const toggleVisibility = () => {
+    setIsVisible(!isVisible);
   };
 
-  const handleTooltipClose = () => {
-    setOpen(false);
-  };
-
-  const handleCOVOpen= () => {
-    setCOVOpen(true);
-  };
-
-  const handleCOVClose= () => {
-    setCOVOpen(false);
-  };
-
-  const handleTooltipOpen2 = () => {
-    setOpen2(true);
-  };
-
-  const handleTooltipClose2 = () => {
-    setOpen2(false);
-  };
 
   // Controlador de mapeo
   useEffect(() => {
@@ -204,9 +185,9 @@ const Map = () => {
     }
   }, [waypoints]);
 
+
   // Generar ruta desde el punto inicial al punto final. ARREGLAR SINCRONISMO
   const handleGenerateRoute = (event) => {
-    setAutonomia(2)
     codePartida();
     codeFinal();
     setWaypoints([coordenadasPartida, coordenadasFinal]);
@@ -354,10 +335,6 @@ const Map = () => {
   const handleSelectVehiculo = (event) => {
     const selectedValue = event.value;
     setSelectedVehiculo(selectedValue);
-    setAutonomy(selectedValue.capacidad)
-    const chargers = getChargers(selectedValue);
-    setChargerNames(chargers);
-    handleCargador(cargadores.filter(c => chargers.includes(c.value)));
   };
 
   const customIcon = L.icon({
@@ -376,7 +353,7 @@ const Map = () => {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim() === '') {
+    if (searchQuery.trim() === '' && selectedOptions.length === 0) {
       setFilteredLocations(locations);
       setSelectedLocation(null);
       return; // Exit the function early
@@ -390,8 +367,11 @@ const Map = () => {
         // Check if the name matches the search query
         const nameMatches = attributes.direccion.toLowerCase().includes(searchQuery.toLowerCase());
 
+        // Check if any of the selected options are set to 1 (true)
+        const typesMatch = selectedOptions.some(option => attributes[option.value] > 0);
+
         // Return true if either condition is met
-        return nameMatches;
+        return nameMatches && typesMatch;
       });
 
       setFilteredLocations(filtered);
@@ -488,7 +468,6 @@ const Map = () => {
     // Save the selected place data
     setPartida(place);
   };
-
   const handleFinal = (place) => {
     // Save the selected place data
     setFinal(place);
@@ -584,6 +563,9 @@ const Map = () => {
     );
   };
 
+  const PrettoSlider = styled(Slider)({
+  });
+
   const containerStyle = {
     display: "flex",
     justifyContent: "space-between",
@@ -633,7 +615,7 @@ const Map = () => {
       const layerGroup = L.layerGroup([polygon]);
 
       // Filter locations that are inside the bounding box using leaflet-pip
-      const locationsInSegment = filteredLocations.filter(location => {
+      const locationsInSegment = locations.filter(location => {
         const latLng = L.latLng(location.lat, location.lon);
         const isInside = isPointInsideRectangle(latLng, rectangle);
         if (isInside) {
@@ -651,15 +633,15 @@ const Map = () => {
     setFilteredLocations(filtered); // Store filtered locations
     setPolygons(polygonsArray); 
     setLocationsWithSegments(locationsWithSegmentsMap);
-    findFurthestSegmentsWithinRange(soc*1000, autonomy*1000);
+    findFurthestSegmentsWithinRange(autonomy*1000);
 
   };
 
-  const findFurthestSegmentsWithinRange = (initialDistance, maxDistance) => {
+
+  const findFurthestSegmentsWithinRange = (maxDistance) => {
     let segmentsWithLocations = [];
     let totalDistance = 0;
     let currentIndex = 0;
-    let currentMaxDistance = initialDistance; // Use initialDistance for the first iteration
   
     // Continue searching until we reach the end
     while (currentIndex < interpolatedPoints.length - 1) {
@@ -679,7 +661,7 @@ const Map = () => {
         // Check if the segment contains any locations
         const hasLocations = locationsWithSegments[i] && locationsWithSegments[i].length > 0;
   
-        if (totalDistance <= currentMaxDistance && totalDistance > maxDistanceSoFar && hasLocations) {
+        if (totalDistance <= maxDistance && totalDistance > maxDistanceSoFar && hasLocations) {
           furthestSegment = i;
           maxDistanceSoFar = totalDistance;
           furthestSegmentLocations = locationsWithSegments[i];
@@ -690,11 +672,10 @@ const Map = () => {
       if (furthestSegment !== null) {
         segmentsWithLocations.push({
           segment: furthestSegment,
-          locations: furthestSegmentLocations,
+          locations: furthestSegmentLocations
         });
         currentIndex = furthestSegment + 1; // Start from the next segment
         totalDistance = 0; // Reset the total distance for the next iteration
-        currentMaxDistance = maxDistance; // Switch to maxDistance for the next cycle
       } else {
         break; // Exit the loop if no more valid segments are found
       }
@@ -702,9 +683,8 @@ const Map = () => {
   
     // Save the result to a state or variable as needed
     setFurthestSegments(segmentsWithLocations);
-    console.log(furthestSegments);
+    console.log(furthestSegments)
   };
-  
 
   const renderFilteredLocations = () => {
     const locationsToRender = furthestSegments.flatMap(segment => segment.locations);
@@ -748,7 +728,7 @@ const handleAutonomyChange = (event) => {
 };
 
 const handleSOCChange = (event) => {
-  setSoc(event.target.value);
+  setAutonomy(event.target.value);
 };
 
 const getRandomLocations = (furthestsSegments) => {
@@ -770,6 +750,9 @@ const getRandomLocations = (furthestsSegments) => {
 
   console.log('Updated waypoints:', newWaypoints);
   setWaypoints(newWaypoints);
+
+  
+  
 
 };
 
@@ -800,24 +783,11 @@ function createData(name, calories) {
   return { name, calories};
 }
 
-const getChargers = (vehicle) => {
-  const chargers = [];
-  if (vehicle.T1 > 0) chargers.push("T1");
-  if (vehicle.T2 > 0) chargers.push("T2");
-  if (vehicle.T2SC > 0) chargers.push("T2SC");
-  if (vehicle.GPTDC > 0) chargers.push("GPTDC");
-  if (vehicle.CHADEMO > 0) chargers.push("CHADEMO");
-  if (vehicle.CCST2 > 0) chargers.push("CCST2");
-  return chargers.length > 0 ? chargers : [];
-};
-
-
-
 const rows = [
   createData('Modelo', selectedVehiculo?.modelo|| ""),
   createData('Autonomía [km]', selectedVehiculo?.capacidad|| ""),
   createData('Rendimiento [km/kWh]', selectedVehiculo?.rendimiento || ""),
-  createData('Cargador', chargerNames.join(' | ') || ""),
+  createData('Cargador', selectedVehiculo?.autonomia|| ""),
 ];
 
 const StarRating = ({ locationIdx, ratings, handleRatingChange }) => {
@@ -910,66 +880,6 @@ const handleRatingChange = (event, locationId) => {
   }));
 };
 
-const handleCargador = (selectedOptions) => {
-  setSelectedOptions(selectedOptions);
-  
-  // Add any additional logic here
-  console.log('Selected options:', selectedOptions);
-
-  {
-    if (selectedOptions.length === 0) {
-      setFilteredLocations(locations);
-      setSelectedLocation(null);
-      return; // Exit the function early
-    
-  
-    } else {
-      const filtered = locations.filter((location) => {
-
-        const attributes = location;
-
-        // Check if any of the selected options are set to 1 (true)
-        const typesMatch = selectedOptions.some(option => attributes[option.value] > 0);
-
-        // Return true if either condition is met
-        return typesMatch;
-      });
-
-      setFilteredLocations(filtered);
-      if (filtered.length > 0) {
-        setSelectedLocation(filtered[0]);
-        mapRef.current.flyTo(
-          [filtered[0].lat, filtered[0].lon],
-          8 // Zoom level
-        );
-      } else {
-        setSelectedLocation(null);
-      }
-    }
-  };
-  // Example: Do something with the selected options
-};
-
-const marks = [
-  {
-    value: 80,
-    label: '80 km.',
-  },
-  {
-    value: 580,
-    label: '580 km.',
-  },
-  {
-    value: 330,
-    label: '330 km.',
-  },
-];
-
-
-function valuetext(value) {
-  return `${value}°C`;
-}
-
   return (
     
     <div>
@@ -998,13 +908,13 @@ function valuetext(value) {
             E - MAP Centro de Energía UC
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            <button onClick={() => setIsVisible(true)}>
+            <button onClick={toggleVisibility}>
               Explorador
             </button>
           </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-          <button onClick={() => setIsVisible(false)}>
+            <button onClick={toggleVisibility}>
               Planificador de ruta
 
   
@@ -1056,8 +966,8 @@ function valuetext(value) {
   style={{
     position: 'absolute',
     backgroundColor: colorContExt,
-    width: '27%',
-    height: '65%',
+    width: 410,
+    height: 525,
     top: '10%',
     left: '10%',
     zIndex: isVisible ? 1000 : 0, // Lower zIndex when hidden
@@ -1082,8 +992,8 @@ function valuetext(value) {
   <div
     style={{
       background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`, // Correct usage of backticks
-      width: '90%',
-      height: '90%',
+      width: 380,
+      height: 460,
       borderRadius: '20px',
     }}
   >
@@ -1101,11 +1011,8 @@ function valuetext(value) {
           value={autonomia}
           min={80}
           max={580}
-          aria-label="Custom marks"
           onChange={handleChange}
           valueLabelDisplay="auto" // Only show the label when active (hover or during drag)
-          getAriaValueText={valuetext}
-          marks={marks}
           sx={{
             color: colorBtn,
             height: 8,
@@ -1134,7 +1041,7 @@ function valuetext(value) {
     isMulti
     options={cargadores}
     value={selectedOptions}
-    onChange={handleCargador} // Update the selected options state
+    onChange={setSelectedOptions} // Update the selected options state
     styles={{
       container: (base) => ({
         ...base,
@@ -1238,7 +1145,6 @@ function valuetext(value) {
         label="Vehiculo Modelo"
         onChange={handleSelectVehiculo}
         options = {vehiculosOptions}
-        placeholder = "Seleccionar desde base de datos..."
         styles={{
           container: (base) => ({
             ...base,
@@ -1326,7 +1232,7 @@ function valuetext(value) {
     position: 'absolute',
     backgroundColor: colorContExt,
     width: 460,
-    height: 420,
+    height: 380,
     top: '10%',
     left: '10%',
     zIndex: !isVisible ? 1000 : 0, // Higher zIndex when visible
@@ -1352,7 +1258,7 @@ function valuetext(value) {
     style={{
       background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`,
       width: 430,
-      height: 380,
+      height: 300,
       borderRadius: '20px',
     }}
   >
@@ -1372,7 +1278,7 @@ function valuetext(value) {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: '0px',
+        marginTop: '10px',
         width: '100%', // Ensure full width
       }}
     >
@@ -1410,7 +1316,7 @@ function valuetext(value) {
       />
     </div>
   </Grid>
-          <Grid item xs style={{ width: '80%', padding: '0px 0px', textAlign: 'center' }}>
+          <Grid item xs style={{ width: '80%', padding: '5px 0px', textAlign: 'center' }}>
             <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center">Indique punto de llegada </Typography>
             <div>
             <Autocomplete
@@ -1437,296 +1343,75 @@ function valuetext(value) {
             />
           </div>
           </Grid>
-          
-          <Grid container 
-  style={{ 
-    width: '80%', 
-    padding: '0px', 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'center' // Change to 'center' to center align the items in the Grid
-  }}
->
-    <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center">Indique tipo de cargador o vehículo </Typography>
-    <Tooltip
-        title={
-          <span style={{ whiteSpace: 'pre-line' }}>
-            Al seleccionar uno o varios tipos de cargador, filtra los puntos de carga que posean al menos 1 cargador de acuerdo a los seleccionados.{"\n"}{"\n"}
-            Al seleccionar un vehículo de la base de datos se ingresa de forma directa los tipos de cargadores adecuados para dicho vehículo, al igual que la autonomía de fábrica.
-          </span>
-        }
-        open={COVOpen}
-        onClose={handleCOVClose}
-        onOpen={handleCOVOpen}
-        leaveDelay={200}
-        arrow // Muestra una flecha en el tooltip
-      >
-        <IconButton
-          size="small"
-          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
-          onClick={handleCOVOpen}
-        >
-          <HelpOutlineIcon style={{ color: '#00796B' }} />
-        </IconButton>
-      </Tooltip>
-    <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-
-      <Select
-    closeMenuOnSelect={false}
-    isMulti
-    options={cargadores}
-    value={selectedOptions}
-    onChange={handleCargador} // Update the selected options state
-    placeholder = "Cargador"
-    styles={{
-      container: (base) => ({
-        ...base,
-        width: '100%',               // Full width of the parent container
-        marginBottom: '0px',        // Space between select and input
-      }),
-      control: (base) => ({
-        ...base,
-        backgroundColor: elementInt,  // Light yellow background
-        borderRadius: '8px',         // Rounded corners
-        minHeight: '30px',           // Reduce the minimum height to make it thinner
-        maxHeight: '38px',           // Keep the max height smaller for consistency
-        overflowY: 'auto',           // Enable scrolling for multiple selections
-        padding: '0px',              // Reduce padding to make it thinner
-      }),
-      valueContainer: (base) => ({
-        ...base,
-        padding: '0 8px',            // Slim down the value container padding
-      }),
-      input: (base) => ({
-        ...base,
-        margin: '0px',               // Remove margin around the input text
-        padding: '0px',              // Remove padding to slim the input
-      }),
-      placeholder: (base) => ({
-        ...base,
-        color: colorTxtInt,            // Placeholder color
-        fontSize: '14px',            // Smaller font size for placeholder text
-      }),
-      multiValue: (base) => ({
-        ...base,
-        backgroundColor: colorBtn,  // Background color for selected items
-        fontSize: '12px',            // Smaller font size for selected items
-        padding: '0px 0px',          // Slim down padding for selected items
-      }),
-      multiValueLabel: (base) => ({
-        ...base,
-        color: '#00796B',            // Text color for selected items
-        whiteSpace: 'nowrap',        // Prevent text from wrapping
-      }),
-      multiValueRemove: (base) => ({
-        ...base,
-        fontSize: '12px',            // Smaller font size for remove icon
-        padding: '0 0px',            // Smaller padding for the remove button
-      }),
-      menu: (base) => ({
-        ...base,
-        backgroundColor: elementInt,  // Background color for the dropdown menu
-        color: colorTxtInt,             // Text color for options
-      }),
-    }}
-  />
-      
-      
-      </Grid>
-
-      <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-
-      <Select
-        labelId="vehiculo-select-label"
-        id="vehiculo-select"
-        value={selectedVehiculo}
-        label="Vehiculo Modelo"
-        onChange={handleSelectVehiculo}
-        options = {vehiculosOptions}
-        placeholder = "Vehículo"
-        styles={{
-          container: (base) => ({
-            ...base,
-            width: '100%',               // Full width of the parent container
-            marginBottom: '0px',        // Space between select and input
-          }),
-          control: (base) => ({
-            ...base,
-            backgroundColor: elementInt,  // Light yellow background
-            borderRadius: '8px',         // Rounded corners
-            minHeight: '30px',           // Reduce the minimum height to make it thinner
-            maxHeight: '38px',           // Keep the max height smaller for consistency
-            overflowY: 'auto',           // Enable scrolling for multiple selections
-            padding: '0px',              // Reduce padding to make it thinner
-          }),
-          valueContainer: (base) => ({
-            ...base,
-            padding: '0 8px',            // Slim down the value container padding
-          }),
-          input: (base) => ({
-            ...base,
-            margin: '0px',               // Remove margin around the input text
-            padding: '0px',              // Remove padding to slim the input
-          }),
-          placeholder: (base) => ({
-            ...base,
-            color: colorTxtInt,            // Placeholder color
-            fontSize: '14px',            // Smaller font size for placeholder text
-          }),
-          multiValue: (base) => ({
-            ...base,
-            backgroundColor: colorBtn,  // Background color for selected items
-            fontSize: '12px',            // Smaller font size for selected items
-            padding: '2px 4px',          // Slim down padding for selected items
-          }),
-          multiValueLabel: (base) => ({
-            ...base,
-            color: '#00796B',            // Text color for selected items
-            whiteSpace: 'nowrap',        // Prevent text from wrapping
-          }),
-          multiValueRemove: (base) => ({
-            ...base,
-            fontSize: '12px',            // Smaller font size for remove icon
-            padding: '0 4px',            // Smaller padding for the remove button
-          }),
-          menu: (base) => ({
-            ...base,
-            backgroundColor: elementInt,  // Background color for the dropdown menu
-            color: colorTxtInt,             // Text color for options
-          }),
-        }}
-      >
-      </Select>
-        
-      </Grid>
-    </Grid>
-
-
           <Grid container style={{ width: '80%', padding: '0px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
       {/* First Row: SOC and Autonomy */}
-      <Grid style={{ display: 'flex', alignItems: 'center' }}>
-      <Typography sx={{ color: colorLetras, fontWeight: pesoFuente - 100, fontFamily: fuente }} variant="h7" style={{ marginRight: '0px' }}>
-        SOC
-      </Typography>
-      <Tooltip
-        title="SOC corresponde al estado de carga de la batería en kilómetros. Ingrese un valor numérico."
-        open={open}
-        onClose={handleTooltipClose}
-        onOpen={handleTooltipOpen}
-        leaveDelay={200}
-        arrow // Muestra una flecha en el tooltip
-      >
-        <IconButton
-          size="small"
-          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
-          onClick={handleTooltipOpen}
-        >
-          <HelpOutlineIcon style={{ color: '#00796B' }} />
-        </IconButton>
-      </Tooltip>
-      <TextField
-        variant="outlined"
-        type="number"
-        inputProps={{ min: 0 }}
-        size="small"
-        onChange={handleSOCChange}
-        InputProps={{
-          style: {
-            backgroundColor: elementInt, 
-            color: colorTxtInt,
-            height: '30px',
-            width: '70px',
-            border: '1px solid #00796B',
-            borderRadius: '4px',
-          },
-          inputProps: { min: 0 }, // Hide arrows in WebKit browsers (Chrome, Safari)
-        }}
-        sx={{
-          '& input[type=number]': {
-            MozAppearance: 'textfield', // Firefox
-          },
-          '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
-            WebkitAppearance: 'none', // Chrome, Safari
-            margin: 0,
-          },
-        }}
-      />
-      
-    </Grid>
+      <Grid style={{display: 'flex', alignItems: 'center' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente -100, fontFamily: fuente }} variant="h7" style={{ marginRight: '10px' }}>
+          SOC
+        </Typography>
+        <TextField
+          variant="outlined"
+          placeholder="Enter SOC"
+          type="number" // Restrict input to numbers
+          inputProps={{ min: 0 }} // Set minimum value to 0
+          size="small" // Make the text field smaller
+          onChange={handleSOCChange}
+          // style={{ maxWidth: '100px', height: '30px' }} // Adjust height and limit the maximum width
+          InputProps={{
+            style: {
+              backgroundColor: elementInt, // Set background color to cyan
+              color: colorTxtInt,
+              height: '30px', // Set the height of the input
+              width: '100px',
+              padding: '10px 10px', // Adjust padding inside the input
+              border: '1px solid #00796B',  // Add a border for clarity
+              borderRadius: '4px', // Rounded corners
+            },
+          }}
+        />
+      </Grid>
 
       <Grid style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente -100, fontFamily: fuente }} variant="h7" style={{ marginRight: '0px' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente -100, fontFamily: fuente }} variant="h7" style={{ marginRight: '10px' }}>
           Autonomía
         </Typography>
-        <Tooltip
-        title="Corresponde a la autonomía del vehículo en kilómetros bajo un estado de carga del 70% considerando no llegar a la desacarga completa."
-        open={open2}
-        onClose={handleTooltipClose2}
-        onOpen={handleTooltipOpen2}
-        leaveDelay={200}
-        arrow // Muestra una flecha en el tooltip
-      >
-        <IconButton
-          size="small"
-          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
-          onClick={handleTooltipOpen2}
-        >
-          <HelpOutlineIcon style={{ color: '#00796B' }} />
-        </IconButton>
-      </Tooltip>
         <TextField
-            variant="outlined"
-            type="number"
-            value = {autonomy !== null && autonomy !== '' ? autonomy : ''}
-            inputProps={{ min: 0, style: { MozAppearance: 'textfield' } }} // Hide arrows in Firefox
-            size="small"
-            onChange={handleAutonomyChange}
-            InputProps={{
-              style: {
-                backgroundColor: elementInt, 
-                color: colorTxtInt,
-                height: '30px',
-                width: '70px',
-                border: '1px solid #00796B',
-                borderRadius: '4px',
-              },
-              inputProps: { min: 0 }, // Hide arrows in WebKit browsers (Chrome, Safari)
-            }}
-            sx={{
-              '& input[type=number]': {
-                MozAppearance: 'textfield', // Firefox
-              },
-              '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
-                WebkitAppearance: 'none', // Chrome, Safari
-                margin: 0,
-              },
-            }}
-          />
+          variant="outlined"
+          placeholder="Enter Autonomy"
+          type="number" // Restrict input to numbers
+          inputProps={{ min: 0 }} // Set minimum value to 0
+          size="small" // Make the text field smaller
+          onChange={handleAutonomyChange}
+          // style={{ maxWidth: '100px', height: '30px' }} // Adjust height and limit the maximum width
+          InputProps={{
+            style: {
+              backgroundColor: elementInt, // Set background color to cyan
+              color: colorTxtInt,
+              height: '30px', // Set the height of the input
+              width: '100px',
+              padding: '0 10px', // Adjust padding inside the input
+              border: '1px solid #00796B',  // Add a border for clarity
+              borderRadius: '4px', // Rounded corners
+            },
+          }}
+        />
       </Grid>
     </Grid>
-
-    
-
-
-
     <Grid container style={{ width: '80%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <button
-              onClick={handleGenerateRoute}
-              style={{
-                backgroundColor: colorBtn,
-                color: colorTxtBtn,
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                margin: '4px',
-                fontSize: '14px',
-                cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
-                opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
-              }}
-              disabled={!partida || !final}  // Deshabilitar si partida o final son null
-            >
-              Mostrar ruta
-            </button>
+            onClick={handleGenerateRoute}
+            style={{
+              backgroundColor: colorBtn,
+              color: colorTxtBtn,
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px', // Reduced padding for smaller buttons
+              margin: '4px', // Reduced margin for smaller spacing
+              fontSize: '14px', // Optional: Adjust font size for smaller appearance
+            }}
+          >
+            Mostrar ruta
+          </button>
 
           <button
             onClick={filterLocationsBetweenConsecutivePoints}
@@ -1738,10 +1423,7 @@ function valuetext(value) {
               padding: '4px 8px', // Reduced padding for smaller buttons
               margin: '4px', // Reduced margin for smaller spacing
               fontSize: '14px', // Optional: Adjust font size for smaller appearance
-              cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
-              opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
             }}
-            disabled={!partida || !final}  // Deshabilitar si partida o final son null
           >
             Puntos en ruta
           </button>
@@ -1756,10 +1438,7 @@ function valuetext(value) {
               padding: '4px 8px', // Reduced padding for smaller buttons
               margin: '4px', // Reduced margin for smaller spacing
               fontSize: '14px', // Optional: Adjust font size for smaller appearance
-              cursor: soc && autonomy ? 'pointer' : 'not-allowed',  // Cambia el cursor
-              opacity: soc && autonomy ? 1 : 0.5,  // Opacidad cuando está deshabilitado
             }}
-            disabled={!soc || !autonomy} 
           >
             Optimizar
           </button>
@@ -1851,7 +1530,7 @@ function valuetext(value) {
           <form onSubmit={(event) => handleCommentSubmit(event, location.IDEN)}>
             <div>
               <label>
-                Localización ID: {location.IDEN}
+                Rating: {location.IDEN}
                 <StarRating
                   locationIdx={location.IDEN}
                   ratings={ratings}
@@ -1875,14 +1554,14 @@ function valuetext(value) {
                 }}
               />
             </div>
-            <button type="submit">Enviar comentario</button>
+            <button type="submit">Submit Comment</button>
           </form>
           <div>
-            <h4>Comentarios anteriores:</h4>
+            <h4>Previous Comments:</h4>
             <ul>
               {(commentHistory[location.IDEN] || []).map((entry, i) => (
                 <li key={i}>
-                  <strong>Valoración: {entry.rating || "N/A"}</strong>
+                  <strong>Rating: {entry.rating || "N/A"}</strong>
                   <p>{entry.comment || "Sin comentarios"}</p>
                 </li>
               ))}
