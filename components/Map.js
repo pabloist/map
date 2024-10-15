@@ -1057,7 +1057,7 @@ function valuetext(value) {
     position: 'absolute',
     backgroundColor: colorContExt,
     width: '27%',
-    height: '65%',
+    height: '55%',
     top: '10%',
     left: '10%',
     zIndex: isVisible ? 1000 : 0, // Lower zIndex when hidden
@@ -1788,7 +1788,7 @@ function valuetext(value) {
     <MapContainer
         center={[-38.8, -73]}
         zoom={4}
-        style={{ height: '90vh', width: '100vw' }}
+        style={{ height: '100vh', width: '100vw' }}
         ref={mapRef}
       >
         <CreatePane />
