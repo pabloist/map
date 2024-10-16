@@ -75,6 +75,24 @@ const Map = () => {
   const [vehiculos, setvehiculos] = useState([]);
   const [selectedVehiculo, setSelectedVehiculo] = useState();
   const [chargerNames, setChargerNames] = useState([]);
+  const sizeTitulo = {
+    xs: '0.8rem',  // For extra-small screens (phones)
+    sm: '1.25rem', // For small screens (tablets)
+    md: '1rem',  // For medium screens (small desktops)
+    lg: '1.3rem',  // For large screens (large desktops)
+    xl: '1.3rem', // For extra-large screens
+  }
+
+  const paddingBox = {
+    xs: '2px 0px', // Padding for extra small screens
+    sm: '4px 0px', // Padding for small screens
+    md: '5px 0px', // Padding for medium screens
+    lg: '6px 0px', // Padding for large screens
+    xl: '10px 0px', // Padding for extra large screens
+  }
+
+  const sizeBoxTitle = { xs: '0.8rem', sm: '1.2rem', md: '1.4rem', lg: '1.6rem', xl: '1.2rem' } 
+  const sizeBig = { xs: '0.5rem', sm: '1.2rem', md: '1.4rem', lg: '1.6rem', xl: '1.2rem'}
 
   const cargadores = [
     { value: 'T1', label: 'T1' },
@@ -778,11 +796,40 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
     backgroundColor: colorBtn,
     color: colorTxtBtn,
     padding: '3px', // Reduce padding for header cells
-    borderRadius: '7px'
+    borderRadius: '7px',
+    // Set responsive font size using breakpoints
+    fontSize: '0.6rem', // Default font size for small screens
+    [theme.breakpoints.up('sm')]: {
+      fontSize: '1rem', // Font size for small screens
+    },
+    [theme.breakpoints.up('md')]: {
+      fontSize: '1.2rem', // Font size for medium screens
+    },
+    [theme.breakpoints.up('lg')]: {
+      fontSize: '1.5rem', // Font size for large screens
+    },
+    [theme.breakpoints.up('xl')]: {
+      fontSize: '0.8rem', // Font size for extra large screens
+    },
   },
   [`&.${tableCellClasses.body}`]: {
-    fontSize: 14,
     padding: '4px', // Reduce padding for body cells
+    // Responsive font size for body cells
+    [theme.breakpoints.down('xs')]: {
+      fontSize: '10px',  // For small screens
+    },
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '10px',  // For small screens
+    },
+    [theme.breakpoints.up('md')]: {
+      fontSize: '14px',  // For medium and larger screens
+    },
+    [theme.breakpoints.up('lg')]: {
+      fontSize: '16px',  // For large screens
+    },
+    [theme.breakpoints.up('xl')]: {
+      fontSize: '13px',  // For extra large screens
+    },
   },
 }));
 
@@ -793,6 +840,22 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   // hide last border
   '&:last-child td, &:last-child th': {
     border: 0,
+  },
+  // Responsive padding for table rows
+  [theme.breakpoints.down('xs')]: {
+    padding: '4px', // Adjust padding for small screens
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: '1px', // Adjust padding for small screens
+  },
+  [theme.breakpoints.up('md')]: {
+    padding: '6px', // Adjust padding for medium screens
+  },
+  [theme.breakpoints.up('lg')]: {
+    padding: '8px', // Adjust padding for large screens
+  },
+  [theme.breakpoints.up('xl')]: {
+    padding: '10px', // Adjust padding for extra large screens
   },
 }));
 
@@ -970,79 +1033,106 @@ function valuetext(value) {
   return `${value}°C`;
 }
 
+const stylesfiltro = {
+  base: {
+    position: 'absolute',
+    backgroundColor: colorContExt,
+    zIndex: isVisible ? 1000 : 0,
+    borderRadius: '20px',
+    pointerEvents: isVisible ? 'auto' : 'none',
+    opacity: isVisible ? 1 : 0,
+    transition: 'opacity 0.5s ease',
+    border: '1px solid darkblue',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+  },
+  sm: {
+    width: '60%', // Example for small screens
+    height: '50%',
+    top: '5%',
+    left: '10%',
+  },
+  md: {
+    width: '50%', // Example for medium screens
+    height: '55%',
+    top: '10%',
+    left: '25%',
+  },
+  lg: {
+    width: '27%', // Example for large screens
+    height: '55%',
+    top: '10%',
+    left: '10%',
+  },
+};
+// Determine the size of the screen to apply the right styles
+let currentStyle = stylesfiltro.lg; // Default to large
+if (window.innerWidth < 600) {
+  currentStyle = stylesfiltro.sm; // Small screens
+} else if (window.innerWidth < 1200) {
+  currentStyle = stylesfiltro.md; // Medium screens
+}
+
   return (
     
     <div>
 
     
       
-    <AppBar  position="static" sx={{ background: `linear-gradient(to bottom, ${colorBarra1}, ${colorBarra2})` }}>
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
-          <Typography
-            variant="h6"
-            noWrap
-            component="a"
-            href="#app-bar-with-responsive-menu"
-            sx={{
-              mr: 2,
-              display: { xs: 'none', md: 'flex' },
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              letterSpacing: '.03rem',
-              color: 'gray',
-              textDecoration: 'none',
-            }}
-          >
-            E - MAP Centro de Energía UC
-          </Typography>
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            <button onClick={() => setIsVisible(true)}>
-              Explorador
-            </button>
-          </Box>
+<AppBar position="static" sx={{ background: `linear-gradient(to bottom, ${colorBarra1}, ${colorBarra2})` }}>
+  <Container maxWidth="xl">
+    <Toolbar disableGutters>
+      {/* Este icono ahora es visible en pantallas pequeñas */}
+      <img
+        src="logo.png"  // Provide the correct path to your image
+        alt="App logo"
+        style={{ display: 'flex', marginRight: '8px', width: '80px', height: '30px' }} // Adjust size and styling as necessary
+      />
 
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-          <button onClick={() => setIsVisible(false)}>
-              Planificador de ruta
+      {/* Título visible en pantallas pequeñas */}
+      <Typography
+        variant="h6"
+        noWrap
+        component="a"
+        href="#app-bar-with-responsive-menu"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          fontSize: sizeTitulo,
+          fontFamily: 'monospace',
+          fontWeight: 700,
+          letterSpacing: '.03rem',
+          color: 'gray',
+          textDecoration: 'none',
+        }}
+      >
+        E - MAP Centro de Energía UC
+      </Typography>
 
-  
-            </button>
-          </Box>
+      {/* Botones visibles en pantallas pequeñas */}
+      <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'flex' }, justifyContent: 'space-between' }}>
+      <Button
+        onClick={() => setIsVisible(true)}
+        sx={{
+          fontSize: { xs: '0.6rem', sm: '1rem', md: '1.2rem', lg: '1.2rem', xl: '1rem' }, // Font sizes based on screen size
+          padding: '10px 20px',
+        }}
+      >
+        Explorador
+      </Button>
 
-          <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Open settings">
-              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              sx={{ mt: '45px' }}
-              id="menu-appbar"
-              anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorElUser)}
-              onClose={handleCloseUserMenu}
-            >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography textAlign="center">{setting}</Typography>
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
-        </Toolbar>
-      </Container>
-    </AppBar>
+        <Button onClick={() => setIsVisible(false)}
+        sx={{
+            fontSize: { xs: '0.6rem', sm: '1rem', md: '1rem' }, // Font sizes based on screen size
+            padding: '10px 20px',
+          }}>
+          Planificador de ruta
+        </Button>
+      </Box>
+    </Toolbar>
+  </Container>
+</AppBar>
       
       <div 
       className="container"
@@ -1052,28 +1142,28 @@ function valuetext(value) {
       >
 
 
-<div
-  style={{
+<Box
+  sx={{
     position: 'absolute',
     backgroundColor: colorContExt,
-    width: '27%',
-    height: '55%',
-    top: '10%',
-    left: '10%',
-    zIndex: isVisible ? 1000 : 0, // Lower zIndex when hidden
+    zIndex: isVisible ? 1000 : 0,
     borderRadius: '20px',
-    pointerEvents: isVisible ? 'auto' : 'none', // Disable interactions when hidden
+    pointerEvents: isVisible ? 'auto' : 'none',
     opacity: isVisible ? 1 : 0,
     transition: 'opacity 0.5s ease',
     border: '1px solid darkblue',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'column' // Ensure the content stacks vertically
+    flexDirection: 'column',
+    width: { xs: '55%', sm: '80%', md: '90%', lg: '27%', xl: '27%' }, // Width for different screen sizes
+    height: { xs: '75%', sm: '80%', md: '90%', lg: '27%', xl: '56%' }, // Height for different screen sizes
+    top: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Top position for different screen sizes
+    left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
   }}
 >
   {/* Title */}
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente}} variant="h6" align="center" style={{ marginTop: '10px' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle}} align="center" style={{ marginTop: '5%' }}>
     Filtros de Búsqueda
   </Typography>
   
@@ -1093,8 +1183,8 @@ function valuetext(value) {
       justifyContent="center"
       style={{ height: '100%', width: '100%', padding: '4px' }} // Padding for the entire Grid
     >
-      <Grid item xs style={{ padding: '5px 0px', textAlign: 'center' }}> {/* Center the text */}
-        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente}} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+      <Grid item xs style={{ textAlign: 'center' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig}} variant="h7" align="center">
           Indique Autonomía del vehículo
         </Typography>
         <Slider
@@ -1124,7 +1214,7 @@ function valuetext(value) {
       </Grid>
 
       <Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
     Indique tipo de cargador
   </Typography>
 
@@ -1228,7 +1318,7 @@ function valuetext(value) {
 </Grid>
 
 <Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
     Seleccione vehículo
   </Typography>
   <Select
@@ -1296,7 +1386,7 @@ function valuetext(value) {
 
       <Grid item xs style={{ padding: '5px 20px' }}>
       <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 100, border: '1px solid white', borderRadius: '15px',}} aria-label="customized table">
+      <Table sx={{ border: '1px solid white', borderRadius: '15px',}} aria-label="customized table">
         <TableHead>
           <TableRow>
             <StyledTableCell><StyledTableCell>{'Tipo de Vehículo'}</StyledTableCell></StyledTableCell>
@@ -1319,7 +1409,7 @@ function valuetext(value) {
     </Grid>
   </div>
   <hr style={{ width: '60%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
-</div>
+</Box>
 
       <div
   style={{
@@ -1342,7 +1432,7 @@ function valuetext(value) {
   }}
 >
   {/* Title */}
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente  }} variant="h6" align="center" style={{ marginTop: '10px' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle }} align="center" style={{ marginTop: '10px' }}>
     Planificador de ruta
   </Typography>
   
