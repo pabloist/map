@@ -40,6 +40,8 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 
 
+
+
 const Map = () => {
   const [locations, setLocations] = useState([]);
   const [filteredLocations, setFilteredLocations] = useState([]);
@@ -166,12 +168,13 @@ const Map = () => {
         lineOptions: {
           styles: [{ color: "#6FA1EC", weight: 4 }],
         },
-        show: false,
+        show: true,
         addWaypoints: false,
         routeWhileDragging: true,
         draggableWaypoints: true,
         fitSelectedRoutes: true,
         showAlternatives: false,
+        provideRouteAlternatives : true,
         createMarker: function(i, wp, nWps) {
           if (i === 0 || i === nWps - 1) {
               return L.marker(wp.latLng, {icon: customIcon });
@@ -180,8 +183,12 @@ const Map = () => {
           }
       }
       });
-
+      newRoutingControl.getRouter().show = false;
       newRoutingControl.on('routesfound', (e) => {
+        const controlContainer = document.querySelector('.leaflet-routing-container');
+        if (controlContainer) {
+          controlContainer.style.display = 'none'; // Hides the panel
+        }
         const route = e.routes[0];
         const routeCoordinates = route.coordinates;
         const totalDistance = route.summary.totalDistance; // Distancia total en metros
@@ -795,7 +802,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
     backgroundColor: colorBtn,
     color: colorTxtBtn,
-    padding: '3px', // Reduce padding for header cells
+    padding: '1px', // Reduce padding for header cells
     borderRadius: '7px',
     // Set responsive font size using breakpoints
     fontSize: '0.6rem', // Default font size for small screens
@@ -1162,13 +1169,15 @@ if (window.innerWidth < 600) {
     left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
   }}
 >
-  {/* Title */}
+  {/* Título */}
   <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle}} align="center" style={{ marginTop: '5%' }}>
     Filtros de Búsqueda
   </Typography>
   
-  {/* Horizontal line */}
+  {/* Línea horizontal */}
   <hr style={{ width: '90%', margin: '10px 0', border: `1px solid ${colorLin}`}}/>
+
+  {/* Contenedor interno */}
   <div
     style={{
       background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`, // Correct usage of backticks
@@ -1177,16 +1186,21 @@ if (window.innerWidth < 600) {
       borderRadius: '20px',
     }}
   >
+
+    {/* Grid Superior */}
     <Grid
       container
       direction="column"
       justifyContent="center"
-      style={{ height: '100%', width: '100%', padding: '4px' }} // Padding for the entire Grid
+      style={{ height: '100%', width: '100%', padding: '4px' }}
     >
+
+      {/* Primer elemento: Autonomía */}
       <Grid item xs style={{ textAlign: 'center' }}>
         <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig}} variant="h7" align="center">
           Indique Autonomía del vehículo
         </Typography>
+
         <Slider
           value={autonomia}
           min={80}
@@ -1213,70 +1227,75 @@ if (window.innerWidth < 600) {
         />
       </Grid>
 
+      {/* Segundo elemento: Tipo de cargador */}
       <Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
-    Indique tipo de cargador
-  </Typography>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+          Indique tipo de cargador
+        </Typography>
 
-  {/* Select box on top */}
-  <Select
-    closeMenuOnSelect={false}
-    isMulti
-    options={cargadores}
-    value={selectedOptions}
-    onChange={handleCargador} // Update the selected options state
-    styles={{
-      container: (base) => ({
-        ...base,
-        width: '100%',               // Full width of the parent container
-        marginBottom: '5px',        // Space between select and input
-      }),
-      control: (base) => ({
-        ...base,
-        backgroundColor: elementInt,  // Light yellow background
-        borderRadius: '8px',         // Rounded corners
-        minHeight: '30px',           // Reduce the minimum height to make it thinner
-        maxHeight: '38px',           // Keep the max height smaller for consistency
-        overflowY: 'auto',           // Enable scrolling for multiple selections
-        padding: '0px',              // Reduce padding to make it thinner
-      }),
-      valueContainer: (base) => ({
-        ...base,
-        padding: '0 8px',            // Slim down the value container padding
-      }),
-      input: (base) => ({
-        ...base,
-        margin: '0px',               // Remove margin around the input text
-        padding: '0px',              // Remove padding to slim the input
-      }),
-      placeholder: (base) => ({
-        ...base,
-        color: colorTxtInt,            // Placeholder color
-        fontSize: '14px',            // Smaller font size for placeholder text
-      }),
-      multiValue: (base) => ({
-        ...base,
-        backgroundColor: colorBtn,  // Background color for selected items
-        fontSize: '12px',            // Smaller font size for selected items
-        padding: '2px 4px',          // Slim down padding for selected items
-      }),
-      multiValueLabel: (base) => ({
-        ...base,
-        color: '#00796B',            // Text color for selected items
-        whiteSpace: 'nowrap',        // Prevent text from wrapping
-      }),
-      multiValueRemove: (base) => ({
-        ...base,
-        fontSize: '12px',            // Smaller font size for remove icon
-        padding: '0 4px',            // Smaller padding for the remove button
-      }),
-      menu: (base) => ({
-        ...base,
-        backgroundColor: elementInt,  // Background color for the dropdown menu
-        color: colorTxtInt,             // Text color for options
-      }),
-    }}
-  />
+        {/* Select de tipo de cargador */}
+        <Select
+          closeMenuOnSelect={false}
+          isMulti
+          options={cargadores}
+          value={selectedOptions}
+          onChange={handleCargador} // Update the selected options state
+          styles={{
+            container: (base) => ({
+              ...base,
+              width: '100%',               // Full width of the parent container
+              marginBottom: '5px',        // Space between select and input
+            }),
+            control: (base) => ({
+              ...base,
+              backgroundColor: elementInt,  // Light yellow background
+              minHeight: '5px !important', // Strict min-height override
+              borderRadius: '8px',         // Rounded corners
+              overflowY: 'auto',           // Enable scrolling for multiple selections
+              height: '30px !important',   // Force smaller height
+              maxHeight: '38px',           // Keep the max height smaller for consistency
+              padding: '0px',              // Reduce padding to make it thinner
+            }),
+            valueContainer: (base) => ({   // Mayor espacio para valores seleccionados
+              ...base,
+              padding: '0 8px',            // Slim down the value container padding
+            }),
+            placeholder: (base) => ({     // Texto Placeholder
+              ...base,
+              color: colorTxtInt,            
+              fontSize: '14px',            
+            }),
+            multiValue: (base) => ({      // Valores seleccionados
+              ...base,
+              backgroundColor: colorBtn,  
+              fontSize: '12px',            
+            }),
+            multiValueLabel: (base) => ({  // Color texto seleccionado
+              ...base,
+              color: 'white',           
+            }),
+            multiValueRemove: (base) => ({
+              ...base,
+              fontSize: '12px',            // Smaller font size for remove icon
+              padding: '0 4px',            // Smaller padding for the remove button
+            }),
+            menu: (base) => ({
+              ...base,
+              backgroundColor: elementInt,  // Background color for the dropdown menu
+              color: colorTxtInt,             // Text color for options
+            }),
+            dropdownIndicator: (base) => ({
+              ...base,
+              paddingTop: 0,
+              paddingBottom: 0,
+            }),
+            clearIndicator: (base) => ({
+                ...base,
+                paddingTop: 0,
+                paddingBottom: 0,
+          }),
+          }}
+        />
 
   {/* Container for Search Input and Button side by side */}
   <Grid container spacing={1} justifyContent="center" alignItems="center">
