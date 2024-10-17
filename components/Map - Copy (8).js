@@ -1209,6 +1209,653 @@ const selectStyles = {
       }}
       >
 
+
+<Box
+  sx={{
+    position: 'absolute',
+    backgroundColor: colorContExt,
+    zIndex: isVisible ? 1000 : 0,
+    borderRadius: '20px',
+    pointerEvents: isVisible ? 'auto' : 'none',
+    opacity: isVisible ? 1 : 0,
+    transition: 'opacity 0.5s ease',
+    border: '1px solid darkblue',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    width: { xs: '55%', sm: '80%', md: '90%', lg: '27%', xl: '27%' }, // Width for different screen sizes
+    height: { xs: '75%', sm: '80%', md: '90%', lg: '27%', xl: '56%' }, // Height for different screen sizes
+    top: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Top position for different screen sizes
+    left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
+  }}
+>
+  {/* Título */}
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle}} align="center" style={{ marginTop: '5%' }}>
+    Filtros de Búsqueda
+  </Typography>
+  
+  {/* Línea horizontal */}
+  <hr style={{ width: '90%', margin: '10px 0', border: `1px solid ${colorLin}`}}/>
+
+  {/* Contenedor interno */}
+  <div
+    style={{
+      background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`, // Correct usage of backticks
+      width: '90%',
+      height: '90%',
+      borderRadius: '20px',
+    }}
+  >
+
+    {/* Grid Superior */}
+    <Grid
+      container
+      direction="column"
+      justifyContent="center"
+      style={{ height: '100%', width: '100%', padding: '4px' }}
+    >
+
+      {/* Primer elemento: Autonomía */}
+      <Grid item xs style={{ textAlign: 'center' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig}} variant="h7" align="center">
+          Indique Autonomía del vehículo
+        </Typography>
+
+        <Slider
+          value={autonomia}
+          min={80}
+          max={580}
+          aria-label="Custom marks"
+          onChange={handleChange}
+          valueLabelDisplay="auto" // Only show the label when active (hover or during drag)
+          getAriaValueText={valuetext}
+          marks={marks}
+          sx={{
+            color: colorBtn,
+            height: 8,
+            width: '85%',  // Add margin to both left and right
+            '& .MuiSlider-thumb': {
+              height: 24,
+              width: 24,
+              backgroundColor: '#fff',
+              border: '2px solid currentColor',
+            },
+            '& .MuiSlider-valueLabel': {
+              backgroundColor: colorBtn,
+            },
+          }}
+        />
+      </Grid>
+
+      {/* Segundo elemento: Tipo de cargador */}
+      <Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+          Indique tipo de cargador
+        </Typography>
+
+        {/* Select de tipo de cargador */}
+        <Select
+          style={{
+            appearance: 'none', // Remove default arrow for most browsers
+            WebkitAppearance: 'none', // Remove default arrow for Safari
+            MozAppearance: 'none', // Remove default arrow for Firefox
+          }}
+          closeMenuOnSelect={false}
+          isMulti
+          options={cargadores}
+          value={selectedOptions}
+          onChange={handleCargador} // Update the selected options state
+          styles={selectStyles}
+        />
+
+  {/* Container for Search Input and Button side by side */}
+  <Grid container spacing={1} justifyContent="center" alignItems="center">
+    <Grid item xs={8}>
+      {/* Search input with margins and different background */}
+      <input
+        type="text"
+        placeholder="Indique palabra clave"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+        style={{
+          width: '100%',                // Take full width of the grid item
+          padding: '5px',              // Padding for better UX
+          backgroundColor: elementInt,   // Light blue background color
+          border: '1px solid #00796B',  // Add a border for clarity
+          borderRadius: '5px',
+        }}
+      />
+    </Grid>
+
+    <Grid item xs={4}>
+      {/* Button with different background color */}
+      <button
+        onClick={handleSearch}
+        style={{
+          width: '100%',               // Take full width of the grid item
+          padding: '6px',
+          backgroundColor: colorBtn,  // Darker green background
+          color: colorTxtBtn,          // White text for contrast
+          border: 'none',              // Remove default border
+          borderRadius: '5px',         // Rounded corners
+          cursor: 'pointer',           // Pointer cursor for interaction
+        }}
+      >
+        Search
+      </button>
+    </Grid>
+  </Grid>
+</Grid>
+
+<Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+    Seleccione vehículo
+  </Typography>
+  <Select
+        labelId="vehiculo-select-label"
+        id="vehiculo-select"
+        value={selectedVehiculo}
+        label="Vehiculo Modelo"
+        onChange={handleSelectVehiculo}
+        options = {vehiculosOptions}
+        placeholder = "Seleccionar desde base de datos..."
+        styles={selectStyles}
+      >
+      </Select>
+  </Grid>
+
+      <Grid item xs style={{ padding: '5px 20px' }}>
+      <TableContainer component={Paper}>
+      <Table sx={{ border: '1px solid white', borderRadius: '15px',}} aria-label="customized table">
+        <TableHead>
+          <TableRow>
+            <StyledTableCell><StyledTableCell>{'Tipo de Vehículo'}</StyledTableCell></StyledTableCell>
+            <StyledTableCell align="right">{selectedVehiculo?.tipo || ''}</StyledTableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <StyledTableRow key={row.name}>
+              <StyledTableCell component="th" scope="row">
+                {row.name}
+              </StyledTableCell>
+              <StyledTableCell align="right">{row.calories}</StyledTableCell>
+            </StyledTableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+      </Grid>
+    </Grid>
+  </div>
+  <hr style={{ width: '60%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
+</Box>
+
+      <div
+  style={{
+    position: 'absolute',
+    backgroundColor: colorContExt,
+    width: 460,
+    height: 420,
+    top: '10%',
+    left: '10%',
+    zIndex: !isVisible ? 1000 : 0, // Higher zIndex when visible
+    pointerEvents: !isVisible ? 'auto' : 'none', // Enable interactions only when visible
+    borderRadius: '20px',
+    opacity: !isVisible ? 1 : 0,
+    transition: 'opacity 0.5s ease',
+    border: '1px solid darkblue',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column' // Ensure the content stacks vertically
+  }}
+>
+  {/* Title */}
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle }} align="center" style={{ marginTop: '10px' }}>
+    Planificador de ruta
+  </Typography>
+  
+  {/* Horizontal line */}
+  <hr style={{ width: '90%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
+  <div
+    style={{
+      background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`,
+      width: 430,
+      height: 380,
+      borderRadius: '20px',
+    }}
+  >
+        <Grid
+          container
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          style={{ height: '100%', width: '100%', padding: '5px' }} 
+        >
+        <Grid item xs style={{ width: '80%', padding: '5px 0px', textAlign: 'center' }}>
+    <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center">
+      Indique punto de partida
+    </Typography>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: '0px',
+        width: '100%', // Ensure full width
+      }}
+    >
+      <Autocomplete
+        style={{zIndex:9999, 
+          width: '100%', // Full width
+          height: '32px', // Fixed height
+          fontSize: '16px', // Font size
+          padding: '0 10px', // Padding
+          border: '1px solid #00796B',  // Add a border for clarity
+          borderRadius: '5px', // Rounded corners
+          backgroundColor: elementInt, // Background color
+          color: colorTxtInt, // Text color
+          boxSizing: 'border-box', // Include padding in width}}
+        }}
+        apiKey={"AIzaSyBbS1g7ohjBsnluB9jBVJ1WnEvsxNMjMJY"}
+        onPlaceSelected={handlePartida}
+        placeholder= 'Indica el punto de partida'
+        options={{
+          types: ['address'],
+          componentRestrictions: { country: 'cl' },
+        }}
+        styles={{
+          container: {
+            flex: 0,
+          },
+          textInput: {
+            color: 'cyan',
+            fontSize: 16,
+          },
+          predefinedPlacesDescription: {
+            color: '#3caf50',
+          },
+        }}
+      />
+    </div>
+  </Grid>
+          <Grid item xs style={{ width: '80%', padding: '0px 0px', textAlign: 'center' }}>
+            <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center">Indique punto de llegada </Typography>
+            <div>
+            <Autocomplete
+              sx={{ color: colorLetras }}
+              style={{zIndex:9999, 
+                width: '100%', // Full width
+                //height: '40px', // Fixed height
+                height: '32px', // Fixed height
+                fontSize: '16px', // Font size
+                padding: '0 10px', // Padding
+                border: '1px solid #00796B',  // Add a border for clarity
+                borderRadius: '4px', // Rounded corners
+                backgroundColor: elementInt,
+                color: colorTxtInt, // Text color
+                boxSizing: 'border-box', // Include padding in width}}
+              }}
+              apiKey={"AIzaSyBbS1g7ohjBsnluB9jBVJ1WnEvsxNMjMJY"}
+              onPlaceSelected={handleFinal}
+              placeholder= 'Indica el punto de llegada'
+              options={{
+                types: ['address'], // Specify types if needed
+                componentRestrictions: { country: 'cl' } // Restrict to Chile
+              }}
+            />
+          </div>
+          </Grid>
+          
+          <Grid container 
+  style={{ 
+    width: '80%', 
+    padding: '0px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center' // Change to 'center' to center align the items in the Grid
+  }}
+>
+    <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente }} variant="h7" align="center">Indique tipo de cargador o vehículo </Typography>
+    <Tooltip
+        title={
+          <span style={{ whiteSpace: 'pre-line' }}>
+            Al seleccionar uno o varios tipos de cargador, filtra los puntos de carga que posean al menos 1 cargador de acuerdo a los seleccionados.{"\n"}{"\n"}
+            Al seleccionar un vehículo de la base de datos se ingresa de forma directa los tipos de cargadores adecuados para dicho vehículo, al igual que la autonomía de fábrica.
+          </span>
+        }
+        open={COVOpen}
+        onClose={handleCOVClose}
+        onOpen={handleCOVOpen}
+        leaveDelay={200}
+        arrow // Muestra una flecha en el tooltip
+      >
+        <IconButton
+          size="small"
+          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
+          onClick={handleCOVOpen}
+        >
+          <HelpOutlineIcon style={{ color: '#00796B' }} />
+        </IconButton>
+      </Tooltip>
+    <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+
+      <Select
+    closeMenuOnSelect={false}
+    isMulti
+    options={cargadores}
+    value={selectedOptions}
+    onChange={handleCargador} // Update the selected options state
+    placeholder = "Cargador"
+    styles={{
+      container: (base) => ({
+        ...base,
+        width: '100%',               // Full width of the parent container
+        marginBottom: '0px',        // Space between select and input
+      }),
+      control: (base) => ({
+        ...base,
+        backgroundColor: elementInt,  // Light yellow background
+        borderRadius: '8px',         // Rounded corners
+        minHeight: '30px',           // Reduce the minimum height to make it thinner
+        maxHeight: '38px',           // Keep the max height smaller for consistency
+        overflowY: 'auto',           // Enable scrolling for multiple selections
+        padding: '0px',              // Reduce padding to make it thinner
+      }),
+      valueContainer: (base) => ({
+        ...base,
+        padding: '0 8px',            // Slim down the value container padding
+      }),
+      input: (base) => ({
+        ...base,
+        margin: '0px',               // Remove margin around the input text
+        padding: '0px',              // Remove padding to slim the input
+      }),
+      placeholder: (base) => ({
+        ...base,
+        color: colorTxtInt,            // Placeholder color
+        fontSize: '14px',            // Smaller font size for placeholder text
+      }),
+      multiValue: (base) => ({
+        ...base,
+        backgroundColor: colorBtn,  // Background color for selected items
+        fontSize: '12px',            // Smaller font size for selected items
+        padding: '0px 0px',          // Slim down padding for selected items
+      }),
+      multiValueLabel: (base) => ({
+        ...base,
+        color: '#00796B',            // Text color for selected items
+        whiteSpace: 'nowrap',        // Prevent text from wrapping
+      }),
+      multiValueRemove: (base) => ({
+        ...base,
+        fontSize: '12px',            // Smaller font size for remove icon
+        padding: '0 0px',            // Smaller padding for the remove button
+      }),
+      menu: (base) => ({
+        ...base,
+        backgroundColor: elementInt,  // Background color for the dropdown menu
+        color: colorTxtInt,             // Text color for options
+      }),
+    }}
+  />
+      
+      
+      </Grid>
+
+      <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+
+      <Select
+        labelId="vehiculo-select-label"
+        id="vehiculo-select"
+        value={selectedVehiculo}
+        label="Vehiculo Modelo"
+        onChange={handleSelectVehiculo}
+        options = {vehiculosOptions}
+        placeholder = "Vehículo"
+        styles={{
+          container: (base) => ({
+            ...base,
+            width: '100%',               // Full width of the parent container
+            marginBottom: '0px',        // Space between select and input
+          }),
+          control: (base) => ({
+            ...base,
+            backgroundColor: elementInt,  // Light yellow background
+            borderRadius: '8px',         // Rounded corners
+            minHeight: '30px',           // Reduce the minimum height to make it thinner
+            maxHeight: '38px',           // Keep the max height smaller for consistency
+            overflowY: 'auto',           // Enable scrolling for multiple selections
+            padding: '0px',              // Reduce padding to make it thinner
+          }),
+          valueContainer: (base) => ({
+            ...base,
+            padding: '0 8px',            // Slim down the value container padding
+          }),
+          input: (base) => ({
+            ...base,
+            margin: '0px',               // Remove margin around the input text
+            padding: '0px',              // Remove padding to slim the input
+          }),
+          placeholder: (base) => ({
+            ...base,
+            color: colorTxtInt,            // Placeholder color
+            fontSize: '14px',            // Smaller font size for placeholder text
+          }),
+          multiValue: (base) => ({
+            ...base,
+            backgroundColor: colorBtn,  // Background color for selected items
+            fontSize: '12px',            // Smaller font size for selected items
+            padding: '2px 4px',          // Slim down padding for selected items
+          }),
+          multiValueLabel: (base) => ({
+            ...base,
+            color: '#00796B',            // Text color for selected items
+            whiteSpace: 'nowrap',        // Prevent text from wrapping
+          }),
+          multiValueRemove: (base) => ({
+            ...base,
+            fontSize: '12px',            // Smaller font size for remove icon
+            padding: '0 4px',            // Smaller padding for the remove button
+          }),
+          menu: (base) => ({
+            ...base,
+            backgroundColor: elementInt,  // Background color for the dropdown menu
+            color: colorTxtInt,             // Text color for options
+          }),
+        }}
+      >
+      </Select>
+        
+      </Grid>
+    </Grid>
+
+
+          <Grid container style={{ width: '80%', padding: '0px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+      {/* First Row: SOC and Autonomy */}
+      <Grid style={{ display: 'flex', alignItems: 'center' }}>
+      <Typography sx={{ color: colorLetras, fontWeight: pesoFuente - 100, fontFamily: fuente }} variant="h7" style={{ marginRight: '0px' }}>
+        SOC
+      </Typography>
+      <Tooltip
+        title="SOC corresponde al estado de carga de la batería en kilómetros. Ingrese un valor numérico."
+        open={open}
+        onClose={handleTooltipClose}
+        onOpen={handleTooltipOpen}
+        leaveDelay={200}
+        arrow // Muestra una flecha en el tooltip
+      >
+        <IconButton
+          size="small"
+          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
+          onClick={handleTooltipOpen}
+        >
+          <HelpOutlineIcon style={{ color: '#00796B' }} />
+        </IconButton>
+      </Tooltip>
+      <TextField
+        variant="outlined"
+        type="number"
+        inputProps={{ min: 0 }}
+        size="small"
+        onChange={handleSOCChange}
+        InputProps={{
+          style: {
+            backgroundColor: elementInt, 
+            color: colorTxtInt,
+            height: '30px',
+            width: '70px',
+            border: '1px solid #00796B',
+            borderRadius: '4px',
+          },
+          inputProps: { min: 0 }, // Hide arrows in WebKit browsers (Chrome, Safari)
+        }}
+        sx={{
+          '& input[type=number]': {
+            MozAppearance: 'textfield', // Firefox
+          },
+          '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+            WebkitAppearance: 'none', // Chrome, Safari
+            margin: 0,
+          },
+        }}
+      />
+      
+    </Grid>
+
+      <Grid style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente -100, fontFamily: fuente }} variant="h7" style={{ marginRight: '0px' }}>
+          Autonomía
+        </Typography>
+        <Tooltip
+        title="Corresponde a la autonomía del vehículo en kilómetros bajo un estado de carga del 70% considerando no llegar a la desacarga completa."
+        open={open2}
+        onClose={handleTooltipClose2}
+        onOpen={handleTooltipOpen2}
+        leaveDelay={200}
+        arrow // Muestra una flecha en el tooltip
+      >
+        <IconButton
+          size="small"
+          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
+          onClick={handleTooltipOpen2}
+        >
+          <HelpOutlineIcon style={{ color: '#00796B' }} />
+        </IconButton>
+      </Tooltip>
+        <TextField
+            variant="outlined"
+            type="number"
+            value = {autonomy !== null && autonomy !== '' ? autonomy : ''}
+            inputProps={{ min: 0, style: { MozAppearance: 'textfield' } }} // Hide arrows in Firefox
+            size="small"
+            onChange={handleAutonomyChange}
+            InputProps={{
+              style: {
+                backgroundColor: elementInt, 
+                color: colorTxtInt,
+                height: '30px',
+                width: '70px',
+                border: '1px solid #00796B',
+                borderRadius: '4px',
+              },
+              inputProps: { min: 0 }, // Hide arrows in WebKit browsers (Chrome, Safari)
+            }}
+            sx={{
+              '& input[type=number]': {
+                MozAppearance: 'textfield', // Firefox
+              },
+              '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+                WebkitAppearance: 'none', // Chrome, Safari
+                margin: 0,
+              },
+            }}
+          />
+      </Grid>
+    </Grid>
+
+    
+
+
+
+    <Grid container style={{ width: '80%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+          <button
+              onClick={handleGenerateRoute}
+              style={{
+                backgroundColor: colorBtn,
+                color: colorTxtBtn,
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                margin: '4px',
+                fontSize: '14px',
+                cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
+                opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
+              }}
+              disabled={!partida || !final}  // Deshabilitar si partida o final son null
+            >
+              Mostrar ruta
+            </button>
+
+          <button
+            onClick={filterLocationsBetweenConsecutivePoints}
+            style={{
+              backgroundColor: colorBtn,
+              color: colorTxtBtn,
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px', // Reduced padding for smaller buttons
+              margin: '4px', // Reduced margin for smaller spacing
+              fontSize: '14px', // Optional: Adjust font size for smaller appearance
+              cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
+              opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
+            }}
+            disabled={!partida || !final}  // Deshabilitar si partida o final son null
+          >
+            Puntos en ruta
+          </button>
+
+          <button
+            onClick={getRandomLocations}
+            style={{
+              backgroundColor: colorBtn,
+              color: colorTxtBtn,
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px', // Reduced padding for smaller buttons
+              margin: '4px', // Reduced margin for smaller spacing
+              fontSize: '14px', // Optional: Adjust font size for smaller appearance
+              cursor: soc && autonomy ? 'pointer' : 'not-allowed',  // Cambia el cursor
+              opacity: soc && autonomy ? 1 : 0.5,  // Opacidad cuando está deshabilitado
+            }}
+            disabled={!soc || !autonomy} 
+          >
+            Optimizar
+          </button>
+          </Grid>
+          <Grid style={{width: '30%'}}>
+          <div>
+      <div style={containerStyle}>
+        <MapButton
+          imageSrc="https://upload.wikimedia.org/wikipedia/commons/b/bd/Google_Maps_Logo_2020.svg"
+          altText="Google Maps"
+          buttonText="Google Maps"
+        />
+        <WazeButton
+          imageSrc="https://www.grupoautocontrol.com/wp-content/uploads/2022/06/Waze-Logo-1.png"
+          altText="Waze"
+          buttonText="Waze"
+        />
+      </div>
+    </div>
+          </Grid>
+        </Grid>
+      </div>
+      <hr style={{ width: '60%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
+      </div>
+
     <MapContainer
         center={[-38.8, -73]}
         zoom={4}
