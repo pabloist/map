@@ -1138,9 +1138,7 @@ const selectStyles = {
     paddingBottom: 0,
     height: '1px',
   }),
-  indicatorSeparator: () => ({
-    display: 'none', // Hide the separator
-  }),
+  
 };
 
   return (
@@ -1208,6 +1206,191 @@ const selectStyles = {
         position: 'relative',
       }}
       >
+
+
+<Box
+  sx={{
+    position: 'absolute',
+    backgroundColor: colorContExt,
+    zIndex: isVisible ? 1000 : 0,
+    borderRadius: '20px',
+    pointerEvents: isVisible ? 'auto' : 'none',
+    opacity: isVisible ? 1 : 0,
+    transition: 'opacity 0.5s ease',
+    border: '1px solid darkblue',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    width: { xs: '55%', sm: '80%', md: '90%', lg: '27%', xl: '27%' }, // Width for different screen sizes
+    height: { xs: '75%', sm: '80%', md: '90%', lg: '27%', xl: '56%' }, // Height for different screen sizes
+    top: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Top position for different screen sizes
+    left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
+  }}
+>
+  {/* Título */}
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle}} align="center" style={{ marginTop: '5%' }}>
+    Filtros de Búsqueda
+  </Typography>
+  
+  {/* Línea horizontal */}
+  <hr style={{ width: '90%', margin: '10px 0', border: `1px solid ${colorLin}`}}/>
+
+  {/* Contenedor interno */}
+  <div
+    style={{
+      background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`, // Correct usage of backticks
+      width: '90%',
+      height: '90%',
+      borderRadius: '20px',
+    }}
+  >
+
+    {/* Grid Superior */}
+    <Grid
+      container
+      direction="column"
+      justifyContent="center"
+      style={{ height: '100%', width: '100%', padding: '4px' }}
+    >
+
+      {/* Primer elemento: Autonomía */}
+      <Grid item xs style={{ textAlign: 'center' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig}} variant="h7" align="center">
+          Indique Autonomía del vehículo
+        </Typography>
+
+        <Slider
+          value={autonomia}
+          min={80}
+          max={580}
+          aria-label="Custom marks"
+          onChange={handleChange}
+          valueLabelDisplay="auto" // Only show the label when active (hover or during drag)
+          getAriaValueText={valuetext}
+          marks={marks}
+          sx={{
+            color: colorBtn,
+            height: 8,
+            width: '85%',  // Add margin to both left and right
+            '& .MuiSlider-thumb': {
+              height: 24,
+              width: 24,
+              backgroundColor: '#fff',
+              border: '2px solid currentColor',
+            },
+            '& .MuiSlider-valueLabel': {
+              backgroundColor: colorBtn,
+            },
+          }}
+        />
+      </Grid>
+
+      {/* Segundo elemento: Tipo de cargador */}
+      <Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+          Indique tipo de cargador
+        </Typography>
+
+        {/* Select de tipo de cargador */}
+        <Select
+          style={{
+            appearance: 'none', // Remove default arrow for most browsers
+            WebkitAppearance: 'none', // Remove default arrow for Safari
+            MozAppearance: 'none', // Remove default arrow for Firefox
+          }}
+          closeMenuOnSelect={false}
+          isMulti
+          options={cargadores}
+          value={selectedOptions}
+          onChange={handleCargador} // Update the selected options state
+          styles={selectStyles}
+        />
+
+  {/* Container for Search Input and Button side by side */}
+  <Grid container spacing={1} justifyContent="center" alignItems="center">
+    <Grid item xs={8}>
+      {/* Search input with margins and different background */}
+      <input
+        type="text"
+        placeholder="Indique palabra clave"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+        style={{
+          width: '100%',                // Take full width of the grid item
+          padding: '5px',              // Padding for better UX
+          backgroundColor: elementInt,   // Light blue background color
+          border: '1px solid #00796B',  // Add a border for clarity
+          borderRadius: '5px',
+        }}
+      />
+    </Grid>
+
+    <Grid item xs={4}>
+      {/* Button with different background color */}
+      <button
+        onClick={handleSearch}
+        style={{
+          width: '100%',               // Take full width of the grid item
+          padding: '6px',
+          backgroundColor: colorBtn,  // Darker green background
+          color: colorTxtBtn,          // White text for contrast
+          border: 'none',              // Remove default border
+          borderRadius: '5px',         // Rounded corners
+          cursor: 'pointer',           // Pointer cursor for interaction
+        }}
+      >
+        Search
+      </button>
+    </Grid>
+  </Grid>
+</Grid>
+
+<Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+    Seleccione vehículo
+  </Typography>
+  <Select
+        labelId="vehiculo-select-label"
+        id="vehiculo-select"
+        value={selectedVehiculo}
+        label="Vehiculo Modelo"
+        onChange={handleSelectVehiculo}
+        options = {vehiculosOptions}
+        placeholder = "Seleccionar desde base de datos..."
+        styles={selectStyles}
+      >
+      </Select>
+  </Grid>
+
+      <Grid item xs style={{ padding: '5px 20px' }}>
+      <TableContainer component={Paper}>
+      <Table sx={{ border: '1px solid white', borderRadius: '15px',}} aria-label="customized table">
+        <TableHead>
+          <TableRow>
+            <StyledTableCell><StyledTableCell>{'Tipo de Vehículo'}</StyledTableCell></StyledTableCell>
+            <StyledTableCell align="right">{selectedVehiculo?.tipo || ''}</StyledTableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <StyledTableRow key={row.name}>
+              <StyledTableCell component="th" scope="row">
+                {row.name}
+              </StyledTableCell>
+              <StyledTableCell align="right">{row.calories}</StyledTableCell>
+            </StyledTableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+      </Grid>
+    </Grid>
+  </div>
+  <hr style={{ width: '60%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
+</Box>
+
+
 
     <MapContainer
         center={[-38.8, -73]}
