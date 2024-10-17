@@ -32,11 +32,12 @@ import { Grid, TextField} from '@mui/material';
 import Paper from '@mui/material/Paper';
 import { Slider } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import Select, { StylesConfig } from 'react-select';
+import Select from 'react-select';
 import 'lrm-google';
 import 'leaflet-geometryutil'; // Import GeometryUtil
 import { FaStar } from 'react-icons/fa';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 
 
@@ -77,25 +78,6 @@ const Map = () => {
   const [vehiculos, setvehiculos] = useState([]);
   const [selectedVehiculo, setSelectedVehiculo] = useState();
   const [chargerNames, setChargerNames] = useState([]);
-  const sizeTitulo = {
-    xs: '0.8rem',  // For extra-small screens (phones)
-    sm: '1.25rem', // For small screens (tablets)
-    md: '1rem',  // For medium screens (small desktops)
-    lg: '1.3rem',  // For large screens (large desktops)
-    xl: '1.3rem', // For extra-large screens
-  }
-
-  const paddingBox = {
-    xs: '2px 0px', // Padding for extra small screens
-    sm: '4px 0px', // Padding for small screens
-    md: '5px 0px', // Padding for medium screens
-    lg: '6px 0px', // Padding for large screens
-    xl: '10px 0px', // Padding for extra large screens
-  }
-
-  const sizeBoxTitle = { xs: '0.8rem', sm: '1.2rem', md: '1.4rem', lg: '1.6rem', xl: '1.2rem' } 
-  const sizeBig = { xs: '0.5rem', sm: '1.2rem', md: '1.4rem', lg: '1.6rem', xl: '1.2rem'}
-
   const cargadores = [
     { value: 'T1', label: 'T1' },
     { value: 'T2', label: 'T2' },
@@ -125,6 +107,158 @@ const Map = () => {
     value: vehiculo, // The value to be used in the select
     label: vehiculo.marca + " | " +vehiculo.modelo, // The label displayed to the user
   }));
+
+  const sizeTitulo = {
+    xs: '0.8rem',  // For extra-small screens (phones)
+    sm: '1.25rem', // For small screens (tablets)
+    md: '1rem',  // For medium screens (small desktops)
+    lg: '1.3rem',  // For large screens (large desktops)
+    xl: '1.3rem', // For extra-large screens
+  }
+
+  const paddingBox = {
+    xs: '0px 4px', // Padding for extra small screens
+    sm: '0px 4px', // Padding for small screens
+    md: '2px 8px', // Padding for medium screens
+    lg: '2px 12px', // Padding for large screens
+    xl: '2px 15px', // Padding for extra large screens
+  }
+  const sizeBoxTitle = { xs: '0.8rem', sm: '1.2rem', md: '1.4rem', lg: '1.6rem', xl: '1.2rem' }   // Tamaño de letra título barra
+  const sizeBig = { xs: '0.7rem', sm: '1.2rem', md: '1.4rem', lg: '1rem', xl: '1rem'}  // Tamaño de letra subtitulos
+
+  const StyledTableCell = styled(TableCell)(({ theme }) => ({
+    [`&.${tableCellClasses.head}`]: {
+      backgroundColor: colorBtn,
+      color: colorTxtBtn,
+      borderRadius: '7px',
+      padding: '1px',
+      fontSize: '0.6rem', // Default font size for small screens
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '1rem', // Font size for small screens
+        padding: '0.5px',
+      },
+      [theme.breakpoints.up('md')]: {
+        fontSize: '1.2rem', // Font size for medium screens
+        padding: '1px',
+      },
+      [theme.breakpoints.up('lg')]: {
+        fontSize: '1.5rem', // Font size for large screens
+        padding: '2px',
+      },
+      [theme.breakpoints.up('xl')]: {
+        fontSize: '0.8rem', // Font size for extra large screens
+        padding: '2px',
+      },
+    },
+    [`&.${tableCellClasses.body}`]: {
+      padding: '4px', // Reduce padding for body cells
+      // Responsive font size for body cells
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '10px',  // For small screens
+      },
+      [theme.breakpoints.up('md')]: {
+        fontSize: '12px',  // For medium and larger screens
+      },
+      [theme.breakpoints.up('lg')]: {
+        fontSize: '13px',  // For large screens
+      },
+      [theme.breakpoints.up('xl')]: {
+        fontSize: '13px',  // For extra large screens
+      },
+    },
+  }));
+  
+  const StyledTableRow = styled(TableRow)(({ theme }) => ({
+    '&:nth-of-type(odd)': {
+      backgroundColor: elementInt,
+    },
+    // hide last border
+    '&:last-child td, &:last-child th': {
+      border: 0,
+    },
+  }));
+
+  const theme = useTheme();
+
+  // Media queries for breakpoints
+  const isXs = useMediaQuery(theme.breakpoints.down('xs'));
+  const isSm = useMediaQuery(theme.breakpoints.between('xs', 'sm'));
+  const isMd = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const isLg = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+  const isXl = useMediaQuery(theme.breakpoints.up('lg'));
+
+  // Define dynamic styles based on breakpoints
+  const getResponsiveHeight = () => {
+    if (isXs) return { minHeight: '5px', maxHeight: '30px', height: '30px' };
+    if (isSm) return { minHeight: '5px', maxHeight: '30px', height: '30px' };
+    if (isMd) return { minHeight: '5px', maxHeight: '37px', height: '37px' };
+    if (isLg) return { minHeight: '5px', maxHeight: '37px', height: '37px' };
+    if (isXl) return { minHeight: '5px', maxHeight: '37px', height: '37px' };
+    return { minHeight: '5px', maxHeight: '37px', height: '37px' }; // Default for unknown cases
+  };
+
+  const getResponsiveFontSize = () => {
+    if (isXs) return { fontSize: '10px' };
+    if (isSm) return { fontSize: '10px' };
+    if (isMd) return { fontSize: '12px' };
+    if (isLg) return { fontSize: '15px' };
+    if (isXl) return { fontSize: '15px' };
+    return { fontSize: '16px' }; // Default font size
+  };
+
+  const selectStyles = {
+    container: (base) => ({
+      ...base,
+      width: '100%',               // Full width of the parent container
+      marginBottom: '5px',        // Space between select and input
+    }),
+    control: (base) => ({
+      ...base,
+      ...getResponsiveHeight(),
+      backgroundColor: elementInt,  // Light yellow background
+      borderRadius: '8px',         // Rounded corners
+      overflowY: 'auto',           // Enable scrolling for multiple selections
+      padding: '0px',              // Reduce padding to make it thinner
+    }),
+    valueContainer: (base) => ({   // Space for selected values
+      ...base,
+      padding: '0 8px',            // Slim down the value container padding
+    }),
+    placeholder: (base) => ({     // Placeholder text
+      ...base,
+      ...getResponsiveFontSize(),
+      color: colorTxtInt,                      
+    }),
+    multiValue: (base) => ({      // Selected values
+      ...base,
+      ...getResponsiveFontSize(),
+      backgroundColor: colorBtn,          
+    }),
+    multiValueLabel: (base) => ({  // Selected text color
+      ...base,
+      color: 'white',           
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: elementInt,  // Background color for the dropdown menu
+      color: colorTxtInt,             // Text color for options
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      paddingTop: 0,
+      height: '1px',
+      paddingBottom: 0,
+    }),
+    clearIndicator: (base) => ({
+      ...base,
+      paddingTop: 0,
+      paddingBottom: 0,
+      height: '1px',
+    }),
+    
+  };
+
+
 
   const handleTooltipOpen = () => {
     setOpen(true);
@@ -730,7 +864,6 @@ const Map = () => {
     console.log(furthestSegments);
   };
   
-
   const renderFilteredLocations = () => {
     const locationsToRender = furthestSegments.flatMap(segment => segment.locations);
 
@@ -798,74 +931,6 @@ const getRandomLocations = (furthestsSegments) => {
 
 };
 
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  [`&.${tableCellClasses.head}`]: {
-    backgroundColor: colorBtn,
-    color: colorTxtBtn,
-    padding: '1px', // Reduce padding for header cells
-    borderRadius: '7px',
-    // Set responsive font size using breakpoints
-    fontSize: '0.6rem', // Default font size for small screens
-    [theme.breakpoints.up('sm')]: {
-      fontSize: '1rem', // Font size for small screens
-    },
-    [theme.breakpoints.up('md')]: {
-      fontSize: '1.2rem', // Font size for medium screens
-    },
-    [theme.breakpoints.up('lg')]: {
-      fontSize: '1.5rem', // Font size for large screens
-    },
-    [theme.breakpoints.up('xl')]: {
-      fontSize: '0.8rem', // Font size for extra large screens
-    },
-  },
-  [`&.${tableCellClasses.body}`]: {
-    padding: '4px', // Reduce padding for body cells
-    // Responsive font size for body cells
-    [theme.breakpoints.down('xs')]: {
-      fontSize: '10px',  // For small screens
-    },
-    [theme.breakpoints.down('sm')]: {
-      fontSize: '10px',  // For small screens
-    },
-    [theme.breakpoints.up('md')]: {
-      fontSize: '14px',  // For medium and larger screens
-    },
-    [theme.breakpoints.up('lg')]: {
-      fontSize: '16px',  // For large screens
-    },
-    [theme.breakpoints.up('xl')]: {
-      fontSize: '13px',  // For extra large screens
-    },
-  },
-}));
-
-const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  '&:nth-of-type(odd)': {
-    backgroundColor: elementInt,
-  },
-  // hide last border
-  '&:last-child td, &:last-child th': {
-    border: 0,
-  },
-  // Responsive padding for table rows
-  [theme.breakpoints.down('xs')]: {
-    padding: '4px', // Adjust padding for small screens
-  },
-  [theme.breakpoints.down('sm')]: {
-    padding: '1px', // Adjust padding for small screens
-  },
-  [theme.breakpoints.up('md')]: {
-    padding: '6px', // Adjust padding for medium screens
-  },
-  [theme.breakpoints.up('lg')]: {
-    padding: '8px', // Adjust padding for large screens
-  },
-  [theme.breakpoints.up('xl')]: {
-    padding: '10px', // Adjust padding for extra large screens
-  },
-}));
-
 function createData(name, calories) {
   return { name, calories};
 }
@@ -880,8 +945,6 @@ const getChargers = (vehicle) => {
   if (vehicle.CCST2 > 0) chargers.push("CCST2");
   return chargers.length > 0 ? chargers : [];
 };
-
-
 
 const rows = [
   createData('Modelo', selectedVehiculo?.modelo|| ""),
@@ -1035,111 +1098,13 @@ const marks = [
   },
 ];
 
-
 function valuetext(value) {
   return `${value}°C`;
 }
 
-const stylesfiltro = {
-  base: {
-    position: 'absolute',
-    backgroundColor: colorContExt,
-    zIndex: isVisible ? 1000 : 0,
-    borderRadius: '20px',
-    pointerEvents: isVisible ? 'auto' : 'none',
-    opacity: isVisible ? 1 : 0,
-    transition: 'opacity 0.5s ease',
-    border: '1px solid darkblue',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'column',
-  },
-  sm: {
-    width: '60%', // Example for small screens
-    height: '50%',
-    top: '5%',
-    left: '10%',
-  },
-  md: {
-    width: '50%', // Example for medium screens
-    height: '55%',
-    top: '10%',
-    left: '25%',
-  },
-  lg: {
-    width: '27%', // Example for large screens
-    height: '55%',
-    top: '10%',
-    left: '10%',
-  },
-};
-// Determine the size of the screen to apply the right styles
-let currentStyle = stylesfiltro.lg; // Default to large
-if (window.innerWidth < 600) {
-  currentStyle = stylesfiltro.sm; // Small screens
-} else if (window.innerWidth < 1200) {
-  currentStyle = stylesfiltro.md; // Medium screens
-}
 
-const selectStyles = {
-  container: (base) => ({
-    ...base,
-    width: '100%',               // Full width of the parent container
-    marginBottom: '5px',        // Space between select and input
-  }),
-  control: (base) => ({
-    ...base,
-    backgroundColor: elementInt,  // Light yellow background
-    minHeight: '5px !important', // Strict min-height override
-    borderRadius: '8px',         // Rounded corners
-    overflowY: 'auto',           // Enable scrolling for multiple selections
-    height: '30px !important',   // Force smaller height
-    maxHeight: '38px',           // Keep the max height smaller for consistency
-    padding: '0px',              // Reduce padding to make it thinner
-  }),
-  valueContainer: (base) => ({   // Space for selected values
-    ...base,
-    padding: '0 8px',            // Slim down the value container padding
-  }),
-  placeholder: (base) => ({     // Placeholder text
-    ...base,
-    color: colorTxtInt,            
-    fontSize: '10px',            
-  }),
-  multiValue: (base) => ({      // Selected values
-    ...base,
-    backgroundColor: colorBtn,  
-    fontSize: '12px',            
-  }),
-  multiValueLabel: (base) => ({  // Selected text color
-    ...base,
-    color: 'white',           
-  }),
-  multiValueRemove: (base) => ({
-    ...base,
-    fontSize: '12px',            // Smaller font size for remove icon
-    padding: '0 4px',            // Smaller padding for the remove button
-  }),
-  menu: (base) => ({
-    ...base,
-    backgroundColor: elementInt,  // Background color for the dropdown menu
-    color: colorTxtInt,             // Text color for options
-  }),
-  dropdownIndicator: (base) => ({
-    ...base,
-    paddingTop: 0,
-    height: '1px',
-    paddingBottom: 0,
-  }),
-  clearIndicator: (base) => ({
-    ...base,
-    paddingTop: 0,
-    paddingBottom: 0,
-    height: '1px',
-  }),
-  
-};
+
+
 
   return (
     
@@ -1222,8 +1187,8 @@ const selectStyles = {
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'column',
-    width: { xs: '55%', sm: '80%', md: '90%', lg: '27%', xl: '27%' }, // Width for different screen sizes
-    height: { xs: '75%', sm: '80%', md: '90%', lg: '27%', xl: '56%' }, // Height for different screen sizes
+    width: { xs: '57%', sm: '80%', md: '90%', lg: '27%', xl: '25%' }, // Width for different screen sizes
+    height: { xs: '62%', sm: '80%', md: '90%', lg: '27%', xl: '53%' }, // Height for different screen sizes
     top: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Top position for different screen sizes
     left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
   }}
@@ -1251,7 +1216,17 @@ const selectStyles = {
       container
       direction="column"
       justifyContent="center"
-      style={{ height: '100%', width: '100%', padding: '4px' }}
+      sx={{
+        height: '100%',
+        width: '100%',
+        padding: {
+          xs: '2px', // Padding for extra small screens
+          sm: '2px', // Padding for small screens
+          md: '2px', // Padding for medium screens
+          lg: '2px', // Padding for large screens
+          xl: '6px', // Padding for extra large screens
+        },
+      }}
     >
 
       {/* Primer elemento: Autonomía */}
@@ -1287,7 +1262,8 @@ const selectStyles = {
       </Grid>
 
       {/* Segundo elemento: Tipo de cargador */}
-      <Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
+      <Grid item xs style={{ textAlign: 'center' }} 
+      sx={{padding:paddingBox}}>
         <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
           Indique tipo de cargador
         </Typography>
@@ -1346,7 +1322,8 @@ const selectStyles = {
   </Grid>
 </Grid>
 
-<Grid item xs style={{ padding: '5px 20px', textAlign: 'center' }}>
+<Grid item xs style={{ textAlign: 'center' }}
+sx={{padding:paddingBox}}>
   <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
     Seleccione vehículo
   </Typography>
@@ -1363,7 +1340,7 @@ const selectStyles = {
       </Select>
   </Grid>
 
-      <Grid item xs style={{ padding: '5px 20px' }}>
+      <Grid item xs sx={{padding:paddingBox}}>
       <TableContainer component={Paper}>
       <Table sx={{ border: '1px solid white', borderRadius: '15px',}} aria-label="customized table">
         <TableHead>
@@ -1390,7 +1367,370 @@ const selectStyles = {
   <hr style={{ width: '60%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
 </Box>
 
+      <Box
+  sx={{
+    position: 'absolute',
+    backgroundColor: colorContExt,
+    zIndex: !isVisible ? 1000 : 0, // Higher zIndex when visible
+    pointerEvents: !isVisible ? 'auto' : 'none', // Enable interactions only when visible
+    width: { xs: '80%', sm: '80%', md: '90%', lg: '27%', xl: '30%' }, // Width for different screen sizes
+    height: { xs: '80%', sm: '80%', md: '90%', lg: '27%', xl: '45%' }, // Height for different screen sizes
+    top: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Top position for different screen sizes
+    left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
+    borderRadius: '20px',
+    opacity: !isVisible ? 1 : 0,
+    transition: 'opacity 0.5s ease',
+    border: '1px solid darkblue',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column' // Ensure the content stacks vertically
+  }}
+>
+  {/* Title */}
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle }} align="center" style={{ marginTop: '10px' }}>
+    Planificador de ruta
+  </Typography>
+  
+  {/* Horizontal line */}
+  <hr style={{ width: '90%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
+  <div
+    style={{
+      background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`,
+      width: '95%',
+      height: '95%',
+      borderRadius: '20px',
+    }}
+  >
+        <Grid
+          container
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          style={{ height: '100%', width: '100%', padding: '5px' }} 
+        >
+        <Grid item xs style={{ width: '80%', padding: '5px 0px', textAlign: 'center' }}>
+    <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBoxTitle }} variant="h7" align="center">
+      Indique punto de partida
+    </Typography>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: '0px',
+        width: '100%', // Ensure full width
+      }}
+    >
+      <Autocomplete
+        style={{zIndex:9999, 
+          width: '100%', // Full width
+          height: '32px', // Fixed height
+          fontSize: '16px', // Font size
+          padding: '0 10px', // Padding
+          border: '1px solid #00796B',  // Add a border for clarity
+          borderRadius: '5px', // Rounded corners
+          backgroundColor: elementInt, // Background color
+          color: colorTxtInt, // Text color
+          boxSizing: 'border-box', // Include padding in width}}
+        }}
+        apiKey={"AIzaSyBbS1g7ohjBsnluB9jBVJ1WnEvsxNMjMJY"}
+        onPlaceSelected={handlePartida}
+        placeholder= 'Indica el punto de partida'
+        options={{
+          types: ['address'],
+          componentRestrictions: { country: 'cl' },
+        }}
+        styles={{
+          container: {
+            flex: 0,
+          },
+          textInput: {
+            color: 'cyan',
+            fontSize: 16,
+          },
+          predefinedPlacesDescription: {
+            color: '#3caf50',
+          },
+        }}
+      />
+    </div>
+  </Grid>
+          <Grid item xs style={{ width: '80%', padding: '0px 0px', textAlign: 'center' }}>
+            <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBoxTitle }} variant="h7" align="center">Indique punto de llegada </Typography>
+            <div>
+            <Autocomplete
+              sx={{ color: colorLetras }}
+              style={{zIndex:9999, 
+                width: '100%', // Full width
+                //height: '40px', // Fixed height
+                height: '32px', // Fixed height
+                fontSize: '16px', // Font size
+                padding: '0 10px', // Padding
+                border: '1px solid #00796B',  // Add a border for clarity
+                borderRadius: '4px', // Rounded corners
+                backgroundColor: elementInt,
+                color: colorTxtInt, // Text color
+                boxSizing: 'border-box', // Include padding in width}}
+              }}
+              apiKey={"AIzaSyBbS1g7ohjBsnluB9jBVJ1WnEvsxNMjMJY"}
+              onPlaceSelected={handleFinal}
+              placeholder= 'Indica el punto de llegada'
+              options={{
+                types: ['address'], // Specify types if needed
+                componentRestrictions: { country: 'cl' } // Restrict to Chile
+              }}
+            />
+          </div>
+          </Grid>
+          
+          <Grid container 
+  style={{ 
+    width: '80%', 
+    padding: '0px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center' // Change to 'center' to center align the items in the Grid
+  }}
+>
+    <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBoxTitle }} variant="h7" align="center">Indique tipo de cargador o vehículo </Typography>
+    <Tooltip
+        title={
+          <span style={{ whiteSpace: 'pre-line' }}>
+            Al seleccionar uno o varios tipos de cargador, filtra los puntos de carga que posean al menos 1 cargador de acuerdo a los seleccionados.{"\n"}{"\n"}
+            Al seleccionar un vehículo de la base de datos se ingresa de forma directa los tipos de cargadores adecuados para dicho vehículo, al igual que la autonomía de fábrica.
+          </span>
+        }
+        open={COVOpen}
+        onClose={handleCOVClose}
+        onOpen={handleCOVOpen}
+        leaveDelay={200}
+        arrow // Muestra una flecha en el tooltip
+      >
+        <IconButton
+          size="small"
+          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
+          onClick={handleCOVOpen}
+        >
+          <HelpOutlineIcon style={{ color: '#00796B' }} />
+        </IconButton>
+      </Tooltip>
+    <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
 
+      <Select
+    closeMenuOnSelect={false}
+    isMulti
+    options={cargadores}
+    value={selectedOptions}
+    onChange={handleCargador} // Update the selected options state
+    placeholder = "Cargador"
+    styles={selectStyles}
+  >
+    </Select>
+      
+      
+      </Grid>
+
+      <Grid item xs={6} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+
+      <Select
+        labelId="vehiculo-select-label"
+        id="vehiculo-select"
+        value={selectedVehiculo}
+        label="Vehiculo Modelo"
+        onChange={handleSelectVehiculo}
+        options = {vehiculosOptions}
+        placeholder = "Vehículo"
+        styles={selectStyles}
+      >
+      </Select>
+        
+      </Grid>
+    </Grid>
+
+
+          <Grid container style={{ width: '80%', padding: '0px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+      {/* First Row: SOC and Autonomy */}
+      <Grid style={{ display: 'flex', alignItems: 'center' }}>
+      <Typography sx={{ color: colorLetras, fontWeight: pesoFuente - 100, fontFamily: fuente }} variant="h7" style={{ marginRight: '0px' }}>
+        SOC
+      </Typography>
+      <Tooltip
+        title="SOC corresponde al estado de carga de la batería en kilómetros. Ingrese un valor numérico."
+        open={open}
+        onClose={handleTooltipClose}
+        onOpen={handleTooltipOpen}
+        leaveDelay={200}
+        arrow // Muestra una flecha en el tooltip
+      >
+        <IconButton
+          size="small"
+          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
+          onClick={handleTooltipOpen}
+        >
+          <HelpOutlineIcon style={{ color: '#00796B' }} />
+        </IconButton>
+      </Tooltip>
+      <TextField
+        variant="outlined"
+        type="number"
+        inputProps={{ min: 0 }}
+        size="small"
+        onChange={handleSOCChange}
+        InputProps={{
+          style: {
+            backgroundColor: elementInt, 
+            color: colorTxtInt,
+            height: '30px',
+            width: '70px',
+            border: '1px solid #00796B',
+            borderRadius: '4px',
+          },
+          inputProps: { min: 0 }, // Hide arrows in WebKit browsers (Chrome, Safari)
+        }}
+        sx={{
+          '& input[type=number]': {
+            MozAppearance: 'textfield', // Firefox
+          },
+          '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+            WebkitAppearance: 'none', // Chrome, Safari
+            margin: 0,
+          },
+        }}
+      />
+      
+    </Grid>
+
+      <Grid style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente -100, fontFamily: fuente }} variant="h7" style={{ marginRight: '0px' }}>
+          Autonomía
+        </Typography>
+        <Tooltip
+        title="Corresponde a la autonomía del vehículo en kilómetros bajo un estado de carga del 70% considerando no llegar a la desacarga completa."
+        open={open2}
+        onClose={handleTooltipClose2}
+        onOpen={handleTooltipOpen2}
+        leaveDelay={200}
+        arrow // Muestra una flecha en el tooltip
+      >
+        <IconButton
+          size="small"
+          style={{ marginLeft: '0px' }} // Ajusta el margen del ícono
+          onClick={handleTooltipOpen2}
+        >
+          <HelpOutlineIcon style={{ color: '#00796B' }} />
+        </IconButton>
+      </Tooltip>
+        <TextField
+            variant="outlined"
+            type="number"
+            value = {autonomy !== null && autonomy !== '' ? autonomy : ''}
+            inputProps={{ min: 0, style: { MozAppearance: 'textfield' } }} // Hide arrows in Firefox
+            size="small"
+            onChange={handleAutonomyChange}
+            InputProps={{
+              style: {
+                backgroundColor: elementInt, 
+                color: colorTxtInt,
+                height: '30px',
+                width: '70px',
+                border: '1px solid #00796B',
+                borderRadius: '4px',
+              },
+              inputProps: { min: 0 }, // Hide arrows in WebKit browsers (Chrome, Safari)
+            }}
+            sx={{
+              '& input[type=number]': {
+                MozAppearance: 'textfield', // Firefox
+              },
+              '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+                WebkitAppearance: 'none', // Chrome, Safari
+                margin: 0,
+              },
+            }}
+          />
+      </Grid>
+    </Grid>
+
+    
+
+
+
+    <Grid container style={{ width: '80%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+          <button
+              onClick={handleGenerateRoute}
+              style={{
+                backgroundColor: colorBtn,
+                color: colorTxtBtn,
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                margin: '4px',
+                fontSize: '14px',
+                cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
+                opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
+              }}
+              disabled={!partida || !final}  // Deshabilitar si partida o final son null
+            >
+              Mostrar ruta
+            </button>
+
+          <button
+            onClick={filterLocationsBetweenConsecutivePoints}
+            style={{
+              backgroundColor: colorBtn,
+              color: colorTxtBtn,
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px', // Reduced padding for smaller buttons
+              margin: '4px', // Reduced margin for smaller spacing
+              fontSize: '14px', // Optional: Adjust font size for smaller appearance
+              cursor: partida && final ? 'pointer' : 'not-allowed',  // Cambia el cursor
+              opacity: partida && final ? 1 : 0.5,  // Opacidad cuando está deshabilitado
+            }}
+            disabled={!partida || !final}  // Deshabilitar si partida o final son null
+          >
+            Puntos en ruta
+          </button>
+
+          <button
+            onClick={getRandomLocations}
+            style={{
+              backgroundColor: colorBtn,
+              color: colorTxtBtn,
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px', // Reduced padding for smaller buttons
+              margin: '4px', // Reduced margin for smaller spacing
+              fontSize: '14px', // Optional: Adjust font size for smaller appearance
+              cursor: soc && autonomy ? 'pointer' : 'not-allowed',  // Cambia el cursor
+              opacity: soc && autonomy ? 1 : 0.5,  // Opacidad cuando está deshabilitado
+            }}
+            disabled={!soc || !autonomy} 
+          >
+            Optimizar
+          </button>
+          </Grid>
+          <Grid style={{width: '30%'}}>
+          <div>
+      <div style={containerStyle}>
+        <MapButton
+          imageSrc="https://upload.wikimedia.org/wikipedia/commons/b/bd/Google_Maps_Logo_2020.svg"
+          altText="Google Maps"
+          buttonText="Google Maps"
+        />
+        <WazeButton
+          imageSrc="https://www.grupoautocontrol.com/wp-content/uploads/2022/06/Waze-Logo-1.png"
+          altText="Waze"
+          buttonText="Waze"
+        />
+      </div>
+    </div>
+          </Grid>
+        </Grid>
+      </div>
+      <hr style={{ width: '60%', margin: '10px 0', border: `1px solid ${colorLin}`}} />
+      </Box>
 
     <MapContainer
         center={[-38.8, -73]}
