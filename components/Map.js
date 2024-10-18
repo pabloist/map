@@ -139,8 +139,8 @@ const Map = () => {
       backgroundColor: colorBtn,
       color: colorTxtBtn,
       borderRadius: '7px',
-      padding: '1px',
-      fontSize: '0.6rem', // Default font size for small screens
+      padding: '0px',
+      fontSize: '0.5rem', // Default font size for small screens
       [theme.breakpoints.up('sm')]: {
         fontSize: '1rem', // Font size for small screens
         padding: '0.5px',
@@ -159,10 +159,10 @@ const Map = () => {
       },
     },
     [`&.${tableCellClasses.body}`]: {
-      padding: '4px', // Reduce padding for body cells
+      padding: '2px', // Reduce padding for body cells
       // Responsive font size for body cells
       [theme.breakpoints.down('sm')]: {
-        fontSize: '10px',  // For small screens
+        fontSize: '8px',  // For small screens
       },
       [theme.breakpoints.up('md')]: {
         fontSize: '12px',  // For medium and larger screens
@@ -1276,7 +1276,7 @@ sx={{
     alignItems: 'center',
     flexDirection: 'column',
     width: { xs: '85%', sm: '80%', md: '90%', lg: '27%', xl: '25%' }, // Width for different screen sizes
-    height: { xs: '50%', sm: '80%', md: '90%', lg: '27%', xl: '53%' }, // Height for different screen sizes
+    height: { xs: '53%', sm: '80%', md: '90%', lg: '27%', xl: '53%' }, // Height for different screen sizes
     bottom: { xs: '10%', sm: '5%', md: '0', lg: '27%', xl: '40%' }, // Top position for different screen sizes
     left: { xs: '7.5%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
   }}
@@ -1463,10 +1463,10 @@ sx={{padding:paddingBox}}>
     backgroundColor: colorContExt,
     zIndex: !isVisible ? 1000 : 0, // Higher zIndex when visible
     pointerEvents: !isVisible ? 'auto' : 'none', // Enable interactions only when visible
-    width: { xs: '96%', sm: '80%', md: '90%', lg: '27%', xl: '30%' }, // Width for different screen sizes
+    width: { xs: '90%', sm: '80%', md: '90%', lg: '27%', xl: '30%' }, // Width for different screen sizes
     height: { xs: '40%', sm: '80%', md: '90%', lg: '27%', xl: '40%' }, // Height for different screen sizes
     bottom: { xs: '10%', sm: '5%', md: '0', lg: '27%', xl: '52%' }, // Top position for different screen sizes
-    left: { xs: '2%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
+    left: { xs: '5%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
     borderRadius: '20px',
     opacity: !isVisible ? 1 : 0,
     transition: 'opacity 0.5s ease',
@@ -1489,7 +1489,7 @@ sx={{padding:paddingBox}}>
   <div
     style={{
       background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`,
-      width: '90%',
+      width: '95%',
       height: '90%',
       borderRadius: '20px',
     }}
