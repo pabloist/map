@@ -1275,10 +1275,10 @@ sx={{
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'column',
-    width: { xs: '95%', sm: '80%', md: '90%', lg: '27%', xl: '25%' }, // Width for different screen sizes
-    height: { xs: '57%', sm: '80%', md: '90%', lg: '27%', xl: '53%' }, // Height for different screen sizes
+    width: { xs: '85%', sm: '80%', md: '90%', lg: '27%', xl: '25%' }, // Width for different screen sizes
+    height: { xs: '50%', sm: '80%', md: '90%', lg: '27%', xl: '53%' }, // Height for different screen sizes
     bottom: { xs: '10%', sm: '5%', md: '0', lg: '27%', xl: '40%' }, // Top position for different screen sizes
-    left: { xs: '2.5%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
+    left: { xs: '7.5%', sm: '5%', md: '0', lg: '27%', xl: '5%' }, // Left position for different screen sizes
   }}
 >
   {/* Título */}
@@ -1293,7 +1293,7 @@ sx={{
   <div
     style={{
       background: `linear-gradient(to bottom, ${colorContInt1}, ${colorContInt2})`, // Correct usage of backticks
-      width: '90%',
+      width: '95%',
       height: '90%',
       borderRadius: '20px',
     }}
