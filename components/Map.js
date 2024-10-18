@@ -548,7 +548,7 @@ const Map = () => {
   // Vehículo seleccionado
   const handleSelectVehiculo = (event) => {
     const selectedValue = event.value;
-    setSelectedVehiculo(selectedValue.value);
+    setSelectedVehiculo(selectedValue);
     setAutonomy(selectedValue.capacidad)
     const chargers = getChargers(selectedValue);
     setChargerNames(chargers);
