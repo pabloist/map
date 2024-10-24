@@ -64,7 +64,7 @@ const Map = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [interpolatedPoints, setInterpolatedPoints] = useState([])
   const [polygons, setPolygons] = useState([]);
-  const [distanciaEval, setDistanciaEval] = useState([5000]);
+  const [distanciaEval, setDistanciaEval] = useState([1000]);
   const [anchoEval, setAnchoEval] = useState([2000]);
   const [locationsWithSegments, setLocationsWithSegments] = useState({});
   const [furthestSegments, setFurthestSegments] = useState([]);
@@ -78,6 +78,7 @@ const Map = () => {
   const [vehiculos, setvehiculos] = useState([]);
   const [selectedVehiculo, setSelectedVehiculo] = useState(null);
   const [chargerNames, setChargerNames] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
   const cargadores = [
     { value: 'T1', label: 'T1' },
     { value: 'T2', label: 'T2' },
@@ -399,6 +400,8 @@ const Map = () => {
               accumulatedDistance = 0; // Reiniciar la distancia acumulada
             }
           }
+          const lastCoordinate = coordinates[coordinates.length - 1];
+          interpolatedPoints.push(L.latLng(lastCoordinate.lat, lastCoordinate.lng));
 
           return interpolatedPoints;
         };
@@ -492,6 +495,7 @@ const Map = () => {
           modelo: vehiculo.attributes.modelo,
           capacidad: vehiculo.attributes.capacidad,
           rendimiento: vehiculo.attributes.rendimiento,
+          autonom: vehiculo.attributes.autonomia,
           T1: vehiculo.attributes.T1,
           T2: vehiculo.attributes.T2,
           T2SC: vehiculo.attributes.T2SC,
@@ -549,7 +553,12 @@ const Map = () => {
   const handleSelectVehiculo = (event) => {
     const selectedValue = event.value;
     setSelectedVehiculo(selectedValue);
-    setAutonomy(selectedValue.capacidad)
+    setAutonomy(selectedValue.autonom);
+    if (isVisible) {
+      setAutonomia(selectedValue.autonom)
+    } else{
+      setAutonomia(1)
+    }
     const chargers = getChargers(selectedValue);
     setChargerNames(chargers);
     handleCargador(cargadores.filter(c => chargers.includes(c.value)));
@@ -811,6 +820,9 @@ const Map = () => {
     let polygonsArray = [];
     let locationsWithSegmentsMap = {};
 
+    // Make a copy of filteredLocations
+    let availableLocations = [...filteredLocations];
+
     for (let i = 0; i < interpolatedPoints.length - 1; i++) {
       const point1 = interpolatedPoints[i];
       const point2 = interpolatedPoints[i + 1];
@@ -819,16 +831,16 @@ const Map = () => {
 
       // Create a Leaflet polygon from the rectangle points
       const polygon = L.polygon(rectangle);
-
       polygonsArray.push(polygon);
 
       // Create a layer group with the polygon
       const layerGroup = L.layerGroup([polygon]);
 
-      // Filter locations that are inside the bounding box using leaflet-pip
-      const locationsInSegment = filteredLocations.filter(location => {
+      // Filter locations that are inside the bounding box
+      const locationsInSegment = availableLocations.filter(location => {
         const latLng = L.latLng(location.lat, location.lon);
         const isInside = isPointInsideRectangle(latLng, rectangle);
+
         if (isInside) {
           if (!locationsWithSegmentsMap[i]) {
             locationsWithSegmentsMap[i] = [];
@@ -838,14 +850,53 @@ const Map = () => {
         return isInside;
       });
 
+      // Remove found locations from availableLocations to avoid duplicates
+      availableLocations = availableLocations.filter(
+        location => !locationsInSegment.includes(location)
+      );
+
+      // Add locationsInSegment to the filtered list
       filtered = [...filtered, ...locationsInSegment];
     }
 
     setFilteredLocations(filtered); // Store filtered locations
     setPolygons(polygonsArray); 
     setLocationsWithSegments(locationsWithSegmentsMap);
+    console.log(locationsWithSegmentsMap);
     findFurthestSegmentsWithinRange(soc*1000, autonomy*1000);
 
+  };
+
+  const findMaxSegmentDifference = (locationsWithSegments) => {
+    // Get all segment indices
+    const segmentIndices = Object.keys(locationsWithSegments)
+      .map(Number) // Convert keys to numbers
+      .sort((a, b) => a - b); // Sort the indices
+  
+    let maxDifference = 0;
+    let segmentWithMaxDifference = null;
+  
+    for (let i = 0; i < segmentIndices.length - 1; i++) {
+      const currentSegment = segmentIndices[i];
+      const nextSegment = segmentIndices[i + 1];
+      
+      // Calculate the difference between consecutive segments
+      const difference = nextSegment - currentSegment;
+  
+      // Update if we find a larger difference
+      if (difference > maxDifference) {
+        maxDifference = difference;
+        segmentWithMaxDifference = { currentSegment, nextSegment, maxDifference };
+      }
+    }
+    const lastSegment = segmentIndices[segmentIndices.length - 1];
+  const differenceWithEnd = interpolatedPoints.length - lastSegment;
+
+    return {
+      firstSegment: segmentIndices[0], // Index of the first segment
+      maxDifference: maxDifference + 1, // Add 1 to account for segments being consecutive
+      differenceWithEnd: differenceWithEnd-1
+    };
   };
 
   const findFurthestSegmentsWithinRange = (initialDistance, maxDistance) => {
@@ -853,6 +904,28 @@ const Map = () => {
     let totalDistance = 0;
     let currentIndex = 0;
     let currentMaxDistance = initialDistance; // Use initialDistance for the first iteration
+    let posible = true;
+    let maxSegmentDifference = findMaxSegmentDifference(locationsWithSegments)
+    setErrorMessage("");
+
+    if (maxSegmentDifference.maxDifference * distanciaEval > autonomy * 1000) {
+      setErrorMessage(`La mayor distancia entre puntos ${maxSegmentDifference.maxDifference * distanciaEval} es superior a la autonomía ${autonomy * 1000} por lo que no es posible realizar la ruta`);
+      posible = false;
+    }
+
+    if (maxSegmentDifference.firstSegment * distanciaEval > soc * 1000) {
+      setErrorMessage(`La distancia al primer punto ${maxSegmentDifference.firstSegment * distanciaEval} es superior al SOC ${soc * 1000} por lo que no es posible realizar la ruta`);
+      posible = false;
+    }
+
+    if (maxSegmentDifference.differenceWithEnd * distanciaEval > autonomy * 1000) {
+      setErrorMessage(`La distancia entre el último punto y el destino ${maxSegmentDifference.differenceWithEnd * distanciaEval} es superior a la autonomía ${autonomy * 1000} por lo que no es posible realizar la ruta`);
+      posible = false;
+    }
+    if (posible){
+
+
+
   
     // Continue searching until we reach the end
     while (currentIndex < interpolatedPoints.length - 1) {
@@ -895,7 +968,7 @@ const Map = () => {
   
     // Save the result to a state or variable as needed
     setFurthestSegments(segmentsWithLocations);
-    console.log(furthestSegments);
+    console.log(furthestSegments);}
   };
   
   const renderFilteredLocations = () => {
@@ -957,7 +1030,7 @@ const getRandomLocations = (furthestsSegments) => {
   const newWaypoints = [
     waypoints[0], // Keep the first extreme
     ...puntosOptimo.map(location => ({ lat: location.lat, lng: location.lon })), // Add random locations
-    waypoints[1], // Keep the second extreme
+    waypoints[waypoints.length-1], // Keep the second extreme
   ];
 
   console.log('Updated waypoints:', newWaypoints);
@@ -982,7 +1055,7 @@ const getChargers = (vehicle) => {
 
 const rows = [
   createData('Modelo', selectedVehiculo?.modelo|| ""),
-  createData('Autonomía [km]', selectedVehiculo?.capacidad|| ""),
+  createData('Autonomía [km]', selectedVehiculo?.autonom|| ""),
   createData('Rendimiento [km/kWh]', selectedVehiculo?.rendimiento || ""),
   createData('Cargador', chargerNames.join(' | ') || ""),
 ];
@@ -1828,6 +1901,7 @@ sx={{padding:paddingBox}}>
       </div>
       <hr style={{ width: '60%', margin: '5px 0', border: `1px solid ${colorLin}`}} />
       </Box>
+      <Box>{errorMessage && <div style={{ color: 'red' }}>{errorMessage}</div>}</Box>
 
     <MapContainer
         center={[-38.8, -73]}
@@ -1841,8 +1915,8 @@ sx={{padding:paddingBox}}>
           url="https://tile.jawg.io/jawg-dark/{z}/{x}/{y}{r}.png?access-token=o1PNTKJSQoSiFtkp86yCHdSgS8Uy3cCrV3fM8evMVj7suODcZqRFbn3zFqo5Qwvh"
           
         />
+      {/*polygons.map((polygon, index) => (<Polygon key={index} positions={polygon.getLatLngs()} color="blue" weight={2} />))*/}
       {renderFilteredLocations()}
-
         <FeatureGroup>
           <EditControl
             position="topright"
