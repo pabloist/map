@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, FeatureGroup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, FeatureGroup, Circle, useMap, GeoJSON} from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -38,6 +38,8 @@ import 'leaflet-geometryutil'; // Import GeometryUtil
 import { FaStar } from 'react-icons/fa';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useTheme, useMediaQuery } from '@mui/material';
+import * as turf from "@turf/turf";
+
 
 
 
@@ -52,6 +54,7 @@ const Map = () => {
   const mapRef = useRef(null);
   const routingControlRef = useRef(null);
   const [waypoints, setWaypoints] = useState([]);
+  const [geoJSON, setGeoJSON] = useState(null);
 
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
@@ -79,6 +82,7 @@ const Map = () => {
   const [selectedVehiculo, setSelectedVehiculo] = useState(null);
   const [chargerNames, setChargerNames] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [multiPoly, setMultiPoly] = useState(null);
   const cargadores = [
     { value: 'T1', label: 'T1' },
     { value: 'T2', label: 'T2' },
@@ -479,7 +483,7 @@ const Map = () => {
       try {
         // Obtener data a través de la api del servidor
         // const response = await fetch('http://localhost:1337/api/vehiculos');
-        const response = {"data":[{"id":1,"attributes":{"marca":"Audi","modelo":"e-tron","capacidad":83.6,"autonomia":369,"createdAt":"2024-09-30T02:51:04.569Z","updatedAt":"2024-09-30T04:01:08.857Z","publishedAt":"2024-09-30T02:51:09.202Z","rendimiento":4.4,"T1":null,"T2":1,"T2SC":null,"GPTDC":null,"CHADEMO":null,"CCST2":1,"tipo":"Eléctrico Puro"}},{"id":2,"attributes":{"marca":"Audi","modelo":"RS e-tron GT","capacidad":83.7,"autonomia":435,"createdAt":"2024-10-11T15:20:56.085Z","updatedAt":"2024-10-11T15:21:36.527Z","publishedAt":"2024-10-11T15:20:59.587Z","rendimiento":5.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":3,"attributes":{"marca":"Baic","modelo":"EU5 EV SDN AT","capacidad":49.6,"autonomia":228,"createdAt":"2024-10-11T15:22:28.564Z","updatedAt":"2024-10-11T15:22:30.337Z","publishedAt":"2024-10-11T15:22:30.335Z","rendimiento":4.6,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":4,"attributes":{"marca":"BMW","modelo":"330e Iperformance 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":49,"autonomia":64,"createdAt":"2024-10-11T15:23:04.861Z","updatedAt":"2024-10-11T15:23:05.507Z","publishedAt":"2024-10-11T15:23:05.505Z","rendimiento":8.4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":5,"attributes":{"marca":"BMW","modelo":"330e Sedán","capacidad":12,"autonomia":78,"createdAt":"2024-10-11T15:23:43.131Z","updatedAt":"2024-10-11T15:24:39.537Z","publishedAt":"2024-10-11T15:24:39.535Z","rendimiento":6.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":6,"attributes":{"marca":"BMW","modelo":"330e Sedán 2","capacidad":12,"autonomia":71,"createdAt":"2024-10-11T15:24:33.579Z","updatedAt":"2024-10-11T15:24:34.978Z","publishedAt":"2024-10-11T15:24:34.976Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":7,"attributes":{"marca":"BMW","modelo":"530e iPerformance 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":12,"autonomia":85,"createdAt":"2024-10-11T15:25:12.920Z","updatedAt":"2024-10-11T15:25:13.450Z","publishedAt":"2024-10-11T15:25:13.448Z","rendimiento":7.1,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":null,"tipo":"Híbrido con Recarga Exterior"}},{"id":8,"attributes":{"marca":"BMW","modelo":"530e Sedán","capacidad":12,"autonomia":68,"createdAt":"2024-10-11T15:25:30.970Z","updatedAt":"2024-10-11T15:25:55.716Z","publishedAt":"2024-10-11T15:25:55.715Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":9,"attributes":{"marca":"BMW","modelo":"740e iPerformance 2,0 Lts. Sedán 4P. T/A Híbrid","capacidad":11.7,"autonomia":93,"createdAt":"2024-10-11T15:26:28.174Z","updatedAt":"2024-10-11T15:26:28.961Z","publishedAt":"2024-10-11T15:26:28.958Z","rendimiento":7.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":10,"attributes":{"marca":"BMW","modelo":"740le iPerformance 2,0 Lts. Sedán 4P. T/A Híbrido 2","capacidad":11.7,"autonomia":93,"createdAt":"2024-10-11T15:27:19.571Z","updatedAt":"2024-10-11T15:27:20.068Z","publishedAt":"2024-10-11T15:27:20.065Z","rendimiento":7.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":11,"attributes":{"marca":"BMW","modelo":"745e Sedán","capacidad":12,"autonomia":68,"createdAt":"2024-10-11T15:29:24.327Z","updatedAt":"2024-10-11T15:29:25.384Z","publishedAt":"2024-10-11T15:29:25.378Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":12,"attributes":{"marca":"BMW","modelo":"745Le Sedán","capacidad":12,"autonomia":68,"createdAt":"2024-10-11T15:30:00.487Z","updatedAt":"2024-10-11T15:30:01.025Z","publishedAt":"2024-10-11T15:30:01.022Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":13,"attributes":{"marca":"BMW","modelo":"i3 120Ah","capacidad":42.3,"autonomia":309,"createdAt":"2024-10-11T15:30:33.111Z","updatedAt":"2024-10-11T15:30:33.586Z","publishedAt":"2024-10-11T15:30:33.585Z","rendimiento":7.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":14,"attributes":{"marca":"BMW","modelo":"i3 94Ah Hatchback 5P. T/A Motor Eléctrico","capacidad":32.9,"autonomia":250,"createdAt":"2024-10-11T15:31:00.745Z","updatedAt":"2024-10-11T15:31:01.343Z","publishedAt":"2024-10-11T15:31:01.342Z","rendimiento":7.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":15,"attributes":{"marca":"BMW","modelo":"I3s 120Ah","capacidad":42.3,"autonomia":309,"createdAt":"2024-10-11T15:31:26.567Z","updatedAt":"2024-10-11T15:31:27.435Z","publishedAt":"2024-10-11T15:31:27.433Z","rendimiento":7.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":16,"attributes":{"marca":"BMW","modelo":"i4 eDrive40 Gran Coupé","capacidad":84,"autonomia":529,"createdAt":"2024-10-11T15:31:57.216Z","updatedAt":"2024-10-11T15:31:57.787Z","publishedAt":"2024-10-11T15:31:57.786Z","rendimiento":6.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":17,"attributes":{"marca":"BMW","modelo":"I8 1,5 Lts. Coupé 3P. T/A 4x4 Híbrido","capacidad":11.6,"autonomia":193,"createdAt":"2024-10-11T15:32:29.887Z","updatedAt":"2024-10-11T15:32:30.409Z","publishedAt":"2024-10-11T15:32:30.407Z","rendimiento":16.6,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":18,"attributes":{"marca":"BMW","modelo":"I8 1,5 Lts. Roadster 3P. T/A 4x4 Híbrido 2","capacidad":11.6,"autonomia":193,"createdAt":"2024-10-11T15:33:11.139Z","updatedAt":"2024-10-11T15:33:11.680Z","publishedAt":"2024-10-11T15:33:11.677Z","rendimiento":16.6,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":19,"attributes":{"marca":"BMW","modelo":"i8 PHEV 1,5 Lts. DOHC Coupé 2P. T/A Motor Otto","capacidad":7.1,"autonomia":60,"createdAt":"2024-10-11T15:33:47.688Z","updatedAt":"2024-10-11T15:33:48.368Z","publishedAt":"2024-10-11T15:33:48.365Z","rendimiento":8.4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":20,"attributes":{"marca":"BMW","modelo":"iX xDrive30","capacidad":66.5,"autonomia":412,"createdAt":"2024-10-11T15:34:17.748Z","updatedAt":"2024-10-11T15:34:18.332Z","publishedAt":"2024-10-11T15:34:18.331Z","rendimiento":6.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":21,"attributes":{"marca":"BMW","modelo":"iX3 M Station Wagon","capacidad":80,"autonomia":392,"createdAt":"2024-10-11T15:34:44.842Z","updatedAt":"2024-10-11T15:34:45.394Z","publishedAt":"2024-10-11T15:34:45.386Z","rendimiento":4.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":22,"attributes":{"marca":"BMW","modelo":"X1 xDrive25e","capacidad":16.3,"autonomia":90,"createdAt":"2024-10-11T15:35:15.446Z","updatedAt":"2024-10-11T15:35:16.001Z","publishedAt":"2024-10-11T15:35:15.999Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":23,"attributes":{"marca":"BMW","modelo":"X3 xDrive30e","capacidad":12,"autonomia":66,"createdAt":"2024-10-11T15:35:45.841Z","updatedAt":"2024-10-11T15:35:46.473Z","publishedAt":"2024-10-11T15:35:46.471Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":24,"attributes":{"marca":"BMW","modelo":"X5 xDrive40e iPerformance 2,0 Lts. Station Wagon","capacidad":9.2,"autonomia":60,"createdAt":"2024-10-11T15:36:13.662Z","updatedAt":"2024-10-11T15:36:14.132Z","publishedAt":"2024-10-11T15:36:14.130Z","rendimiento":6.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":25,"attributes":{"marca":"BMW","modelo":"X5 xDrive45e","capacidad":24.1,"autonomia":94,"createdAt":"2024-10-11T15:36:43.428Z","updatedAt":"2024-10-11T15:36:43.993Z","publishedAt":"2024-10-11T15:36:43.988Z","rendimiento":3.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":26,"attributes":{"marca":"BMW","modelo":"X5 xDrive50e M Sport LCI","capacidad":68.3,"autonomia":259,"createdAt":"2024-10-11T15:37:14.299Z","updatedAt":"2024-10-11T15:37:14.870Z","publishedAt":"2024-10-11T15:37:14.867Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":27,"attributes":{"marca":"BMW","modelo":"X5 xDrive50e xLine LCI","capacidad":68.3,"autonomia":259,"createdAt":"2024-10-11T15:37:40.010Z","updatedAt":"2024-10-11T15:37:40.570Z","publishedAt":"2024-10-11T15:37:40.565Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":28,"attributes":{"marca":"BMW","modelo":"Station Wagon","capacidad":29.5,"autonomia":97,"createdAt":"2024-10-11T15:38:26.807Z","updatedAt":"2024-10-11T15:38:27.481Z","publishedAt":"2024-10-11T15:38:27.477Z","rendimiento":3.3,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":29,"attributes":{"marca":"BYD","modelo":"BYD D1","capacidad":53.6,"autonomia":375,"createdAt":"2024-10-11T15:39:00.887Z","updatedAt":"2024-10-11T15:39:01.497Z","publishedAt":"2024-10-11T15:39:01.490Z","rendimiento":7,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":30,"attributes":{"marca":"BYD","modelo":"BYD M3","capacidad":50.3,"autonomia":231,"createdAt":"2024-10-11T15:39:29.789Z","updatedAt":"2024-10-11T15:39:30.412Z","publishedAt":"2024-10-11T15:39:30.411Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":31,"attributes":{"marca":"BYD","modelo":"BYD T3","capacidad":50.3,"autonomia":231,"createdAt":"2024-10-11T15:39:59.332Z","updatedAt":"2024-10-11T15:40:00.626Z","publishedAt":"2024-10-11T15:40:00.624Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":32,"attributes":{"marca":"BYD","modelo":"BYD Tang EV","capacidad":82.8,"autonomia":464,"createdAt":"2024-10-11T15:40:33.576Z","updatedAt":"2024-10-11T15:40:34.786Z","publishedAt":"2024-10-11T15:40:34.781Z","rendimiento":5.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":33,"attributes":{"marca":"BYD","modelo":"BYD Tang EV STE","capacidad":82.8,"autonomia":464,"createdAt":"2024-10-11T15:41:04.916Z","updatedAt":"2024-10-11T15:41:05.502Z","publishedAt":"2024-10-11T15:41:05.498Z","rendimiento":5.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":34,"attributes":{"marca":"BYD","modelo":"Dolphin","capacidad":44.9,"autonomia":301,"createdAt":"2024-10-11T15:41:34.149Z","updatedAt":"2024-10-11T15:41:34.885Z","publishedAt":"2024-10-11T15:41:34.879Z","rendimiento":6.7,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":35,"attributes":{"marca":"BYD","modelo":"e5 Sedán 4P. T/A Motor Eléctrico","capacidad":60.6,"autonomia":327,"createdAt":"2024-10-11T15:56:57.204Z","updatedAt":"2024-10-11T15:56:57.874Z","publishedAt":"2024-10-11T15:56:57.869Z","rendimiento":5.4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":36,"attributes":{"marca":"BYD","modelo":"Han EV GS","capacidad":85.4,"autonomia":425,"createdAt":"2024-10-11T15:57:29.164Z","updatedAt":"2024-10-11T15:57:29.671Z","publishedAt":"2024-10-11T15:57:29.667Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":37,"attributes":{"marca":"BYD","modelo":"Qin Plus DM-i","capacidad":8.3,"autonomia":74,"createdAt":"2024-10-11T15:58:04.295Z","updatedAt":"2024-10-11T15:58:04.837Z","publishedAt":"2024-10-11T15:58:04.835Z","rendimiento":8.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":38,"attributes":{"marca":"BYD","modelo":"Song Plus DMI","capacidad":8.3,"autonomia":71,"createdAt":"2024-10-11T15:58:44.021Z","updatedAt":"2024-10-11T15:58:44.743Z","publishedAt":"2024-10-11T15:58:44.741Z","rendimiento":8.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":39,"attributes":{"marca":"BYD","modelo":"TANG EV","capacidad":86.4,"autonomia":363,"createdAt":"2024-10-11T15:59:15.102Z","updatedAt":"2024-10-11T15:59:15.680Z","publishedAt":"2024-10-11T15:59:15.678Z","rendimiento":4.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":40,"attributes":{"marca":"BYD","modelo":"Yuan Plus","capacidad":49.9,"autonomia":290,"createdAt":"2024-10-11T15:59:51.431Z","updatedAt":"2024-10-11T15:59:51.965Z","publishedAt":"2024-10-11T15:59:51.963Z","rendimiento":5.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":41,"attributes":{"marca":"BYD","modelo":"Yuan Plus GS","capacidad":150,"autonomia":870,"createdAt":"2024-10-11T16:00:32.574Z","updatedAt":"2024-10-11T16:00:33.055Z","publishedAt":"2024-10-11T16:00:33.051Z","rendimiento":5.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":42,"attributes":{"marca":"Chery","modelo":"Tiggo 8 Pro PHEV","capacidad":19.3,"autonomia":89,"createdAt":"2024-10-11T16:01:02.290Z","updatedAt":"2024-10-11T16:01:02.979Z","publishedAt":"2024-10-11T16:01:02.975Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":43,"attributes":{"marca":"Chevrolet","modelo":"Bolt EUV","capacidad":66,"autonomia":389,"createdAt":"2024-10-11T16:01:28.400Z","updatedAt":"2024-10-11T16:01:28.874Z","publishedAt":"2024-10-11T16:01:28.871Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":44,"attributes":{"marca":"Chevrolet","modelo":"Bolt EV 2","capacidad":60,"autonomia":359,"createdAt":"2024-10-11T16:02:15.678Z","updatedAt":"2024-10-11T16:02:16.229Z","publishedAt":"2024-10-11T16:02:16.226Z","rendimiento":6,"T1":1,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":45,"attributes":{"marca":"Citroen","modelo":"Berlingo Furgón 2P. T/A Motor Eléctrico","capacidad":22.5,"autonomia":131,"createdAt":"2024-10-11T16:02:49.481Z","updatedAt":"2024-10-11T16:02:49.962Z","publishedAt":"2024-10-11T16:02:49.959Z","rendimiento":5.8,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":1,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":46,"attributes":{"marca":"Citroen","modelo":"E-Berlingo Electrico","capacidad":50,"autonomia":290,"createdAt":"2024-10-11T16:03:29.603Z","updatedAt":"2024-10-11T16:03:30.121Z","publishedAt":"2024-10-11T16:03:30.118Z","rendimiento":5.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":47,"attributes":{"marca":"DFLM","modelo":"S50EV","capacidad":59.6,"autonomia":290,"createdAt":"2024-10-11T16:04:00.640Z","updatedAt":"2024-10-11T16:04:01.184Z","publishedAt":"2024-10-11T16:04:01.179Z","rendimiento":5.1,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":48,"attributes":{"marca":"DFLM","modelo":"S50EVE","capacidad":59.6,"autonomia":290,"createdAt":"2024-10-11T16:04:30.746Z","updatedAt":"2024-10-11T16:04:31.224Z","publishedAt":"2024-10-11T16:04:31.222Z","rendimiento":5.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":49,"attributes":{"marca":"DFM","modelo":"Aeolus E70","capacidad":52.9,"autonomia":312,"createdAt":"2024-10-11T16:05:01.201Z","updatedAt":"2024-10-11T16:05:01.717Z","publishedAt":"2024-10-11T16:05:01.712Z","rendimiento":5.9,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":50,"attributes":{"marca":"DFSK","modelo":"EC35 Cargo Van","capacidad":38.7,"autonomia":159,"createdAt":"2024-10-11T16:05:28.466Z","updatedAt":"2024-10-11T16:05:28.973Z","publishedAt":"2024-10-11T16:05:28.970Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":51,"attributes":{"marca":"DFSK","modelo":"EC35 Cargo Van 2R","capacidad":38.7,"autonomia":159,"createdAt":"2024-10-11T16:05:54.488Z","updatedAt":"2024-10-11T16:06:01.396Z","publishedAt":"2024-10-11T16:06:01.394Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":52,"attributes":{"marca":"DFSK","modelo":"Seres E3","capacidad":53,"autonomia":233,"createdAt":"2024-10-18T17:49:39.238Z","updatedAt":"2024-10-18T17:50:24.815Z","publishedAt":"2024-10-18T17:50:24.813Z","rendimiento":4.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":53,"attributes":{"marca":"Dongfeng","modelo":"e-City MT3.5","capacidad":66.8,"autonomia":307,"createdAt":"2024-10-18T17:50:10.984Z","updatedAt":"2024-10-18T17:50:27.557Z","publishedAt":"2024-10-18T17:50:27.555Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":54,"attributes":{"marca":"Dongfeng","modelo":"e-City MT3.5 Furgon","capacidad":66.8,"autonomia":307,"createdAt":"2024-10-18T17:50:54.886Z","updatedAt":"2024-10-18T17:50:56.401Z","publishedAt":"2024-10-18T17:50:56.397Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":55,"attributes":{"marca":"Dongfeng","modelo":"e-Lite CV3","capacidad":41.9,"autonomia":226,"createdAt":"2024-10-18T17:51:21.934Z","updatedAt":"2024-10-18T17:51:23.846Z","publishedAt":"2024-10-18T17:51:23.843Z","rendimiento":5.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":56,"attributes":{"marca":"DS","modelo":"DS3 Crossback Electrico","capacidad":50,"autonomia":285,"createdAt":"2024-10-18T17:51:51.490Z","updatedAt":"2024-10-18T17:51:52.009Z","publishedAt":"2024-10-18T17:51:52.006Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":57,"attributes":{"marca":"DS","modelo":"DS7 Crossback 1.6 THP 4x4 Automático","capacidad":13.2,"autonomia":63,"createdAt":"2024-10-18T17:52:32.591Z","updatedAt":"2024-10-18T17:52:33.143Z","publishedAt":"2024-10-18T17:52:33.140Z","rendimiento":4.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":58,"attributes":{"marca":"Farizon","modelo":"E6 Furgón","capacidad":50.2,"autonomia":206,"createdAt":"2024-10-18T17:53:04.232Z","updatedAt":"2024-10-18T17:53:04.786Z","publishedAt":"2024-10-18T17:53:04.782Z","rendimiento":4.1,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":59,"attributes":{"marca":"Ferrari","modelo":"296 GTB","capacidad":7.5,"autonomia":54,"createdAt":"2024-10-18T17:53:41.380Z","updatedAt":"2024-10-18T17:53:49.450Z","publishedAt":"2024-10-18T17:53:49.443Z","rendimiento":7.2,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":60,"attributes":{"marca":"Ferrari","modelo":"296 GTS","capacidad":7.5,"autonomia":54,"createdAt":"2024-10-18T17:54:15.980Z","updatedAt":"2024-10-18T17:54:16.666Z","publishedAt":"2024-10-18T17:54:16.664Z","rendimiento":7.2,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":61,"attributes":{"marca":"Ferrari","modelo":"SF90 Spider","capacidad":7.9,"autonomia":85,"createdAt":"2024-10-18T17:54:45.967Z","updatedAt":"2024-10-18T17:54:46.626Z","publishedAt":"2024-10-18T17:54:46.622Z","rendimiento":10.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":62,"attributes":{"marca":"Ferrari","modelo":"SF90 Stradale Coupe","capacidad":7.9,"autonomia":85,"createdAt":"2024-10-18T17:55:10.254Z","updatedAt":"2024-10-18T17:55:10.821Z","publishedAt":"2024-10-18T17:55:10.791Z","rendimiento":10.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":63,"attributes":{"marca":"Fest","modelo":"E Box-M","capacidad":41.9,"autonomia":226,"createdAt":"2024-10-18T17:55:36.409Z","updatedAt":"2024-10-18T17:55:37.054Z","publishedAt":"2024-10-18T17:55:37.052Z","rendimiento":5.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":64,"attributes":{"marca":"Ford","modelo":"E-Transit","capacidad":75.7,"autonomia":303,"createdAt":"2024-10-18T17:56:06.569Z","updatedAt":"2024-10-18T17:56:07.200Z","publishedAt":"2024-10-18T17:56:07.199Z","rendimiento":4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":65,"attributes":{"marca":"Geely","modelo":"Emgrand EV500","capacidad":50,"autonomia":255,"createdAt":"2024-10-18T17:56:45.886Z","updatedAt":"2024-10-18T17:56:46.301Z","publishedAt":"2024-10-18T17:56:46.299Z","rendimiento":5.1,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":66,"attributes":{"marca":"Geely","modelo":"Geometry C","capacidad":72.4,"autonomia":290,"createdAt":"2024-10-18T17:57:16.288Z","updatedAt":"2024-10-18T17:57:16.811Z","publishedAt":"2024-10-18T17:57:16.809Z","rendimiento":4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":67,"attributes":{"marca":"Geely","modelo":"Geometry C GK","capacidad":54.9,"autonomia":230,"createdAt":"2024-10-18T17:57:50.125Z","updatedAt":"2024-10-18T17:57:51.978Z","publishedAt":"2024-10-18T17:57:51.974Z","rendimiento":4.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":68,"attributes":{"marca":"Hyundai","modelo":"Ioniq AE Automóvil 4P. T/A","capacidad":28,"autonomia":246,"createdAt":"2024-10-18T17:58:20.528Z","updatedAt":"2024-10-18T17:58:21.072Z","publishedAt":"2024-10-18T17:58:21.070Z","rendimiento":8.8,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":1,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":69,"attributes":{"marca":"Hyundai","modelo":"Ioniq AE PE","capacidad":38.8,"autonomia":206,"createdAt":"2024-10-18T17:58:49.143Z","updatedAt":"2024-10-18T17:58:49.667Z","publishedAt":"2024-10-18T17:58:49.666Z","rendimiento":5.3,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":1,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":70,"attributes":{"marca":"Hyundai","modelo":"Ioniq5 NE EV AT 2WD (Batería Estándar)","capacidad":58,"autonomia":290,"createdAt":"2024-10-18T17:59:23.274Z","updatedAt":"2024-10-18T17:59:24.241Z","publishedAt":"2024-10-18T17:59:24.239Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":71,"attributes":{"marca":"Hyundai","modelo":"Ioniq5 NE EV AT 2WD (Batería Extendida)","capacidad":72.6,"autonomia":363,"createdAt":"2024-10-18T17:59:49.938Z","updatedAt":"2024-10-18T17:59:50.589Z","publishedAt":"2024-10-18T17:59:50.585Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":72,"attributes":{"marca":"Hyundai","modelo":"Ioniq5 NE EV AT 4WD","capacidad":72.6,"autonomia":363,"createdAt":"2024-10-18T18:00:14.223Z","updatedAt":"2024-10-18T18:00:14.776Z","publishedAt":"2024-10-18T18:00:14.773Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":73,"attributes":{"marca":"Hyundai","modelo":"Kona OS EV SUV AT Motor Electrico","capacidad":64,"autonomia":339,"createdAt":"2024-10-18T18:00:51.127Z","updatedAt":"2024-10-18T18:00:51.611Z","publishedAt":"2024-10-18T18:00:51.608Z","rendimiento":5.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":74,"attributes":{"marca":"Hyundai","modelo":"Kona OS EV SUV T/A Motor Electrico","capacidad":39.2,"autonomia":239,"createdAt":"2024-10-18T18:01:26.363Z","updatedAt":"2024-10-18T18:01:26.993Z","publishedAt":"2024-10-18T18:01:26.991Z","rendimiento":6.1,"T1":1,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":75,"attributes":{"marca":"Jac","modelo":"e-JS1 AT","capacidad":90,"autonomia":612,"createdAt":"2024-10-18T18:01:54.040Z","updatedAt":"2024-10-18T18:01:54.585Z","publishedAt":"2024-10-18T18:01:54.582Z","rendimiento":6.8,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":76,"attributes":{"marca":"Jac","modelo":"e-S2 TA","capacidad":40,"autonomia":212,"createdAt":"2024-10-18T18:02:22.059Z","updatedAt":"2024-10-18T18:02:22.602Z","publishedAt":"2024-10-18T18:02:22.597Z","rendimiento":5.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":77,"attributes":{"marca":"Jac","modelo":"Refine M3 EV AT","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:02:53.753Z","updatedAt":"2024-10-18T18:02:54.284Z","publishedAt":"2024-10-18T18:02:54.278Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":78,"attributes":{"marca":"Jaguar","modelo":"I-PACE EV400 HSE","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:03:22.558Z","updatedAt":"2024-10-18T18:03:23.114Z","publishedAt":"2024-10-18T18:03:23.111Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":79,"attributes":{"marca":"Jaguar","modelo":"I-Pace EV400 R-Dynamic HSE PHEV","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:03:47.687Z","updatedAt":"2024-10-18T18:03:48.519Z","publishedAt":"2024-10-18T18:03:48.516Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":80,"attributes":{"marca":"Jaguar","modelo":"I-Pace EV400 R-Dynamic S PHEV","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:04:17.375Z","updatedAt":"2024-10-18T18:04:17.860Z","publishedAt":"2024-10-18T18:04:17.857Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":81,"attributes":{"marca":"Jaguar","modelo":"I-Pace EV400 R-Dynamic SE PHEV","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:04:45.914Z","updatedAt":"2024-10-18T18:04:46.391Z","publishedAt":"2024-10-18T18:04:46.389Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":82,"attributes":{"marca":"JMC","modelo":"Touring EV","capacidad":60.2,"autonomia":211,"createdAt":"2024-10-18T18:05:11.401Z","updatedAt":"2024-10-18T18:05:16.801Z","publishedAt":"2024-10-18T18:05:16.798Z","rendimiento":3.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":83,"attributes":{"marca":"JMC","modelo":"Vigus EV","capacidad":60.2,"autonomia":211,"createdAt":"2024-10-18T18:05:39.023Z","updatedAt":"2024-10-18T18:05:39.585Z","publishedAt":"2024-10-18T18:05:39.580Z","rendimiento":3.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":84,"attributes":{"marca":"Kia","modelo":"EV6 EV GT-LINE 77.4KWH AWD","capacidad":77.4,"autonomia":457,"createdAt":"2024-10-18T18:06:01.524Z","updatedAt":"2024-10-18T18:06:02.011Z","publishedAt":"2024-10-18T18:06:02.003Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":85,"attributes":{"marca":"Kia","modelo":"Niro EV 64.8KWH 2WD","capacidad":64.8,"autonomia":311,"createdAt":"2024-10-18T18:06:27.640Z","updatedAt":"2024-10-18T18:06:28.141Z","publishedAt":"2024-10-18T18:06:28.134Z","rendimiento":4.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":86,"attributes":{"marca":"Kia","modelo":"Soul Electrico (SK3 EV)","capacidad":64,"autonomia":346,"createdAt":"2024-10-18T18:07:00.347Z","updatedAt":"2024-10-18T18:07:00.857Z","publishedAt":"2024-10-18T18:07:00.850Z","rendimiento":5.4,"T1":1,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":87,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i Autobiography PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:07:31.810Z","updatedAt":"2024-10-18T18:07:32.374Z","publishedAt":"2024-10-18T18:07:32.373Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":88,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i Bronze Colletion PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:08:07.381Z","updatedAt":"2024-10-18T18:08:08.549Z","publishedAt":"2024-10-18T18:08:08.543Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":89,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i Edition PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:08:47.636Z","updatedAt":"2024-10-18T18:08:48.343Z","publishedAt":"2024-10-18T18:08:48.339Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":90,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i HSE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:09:08.426Z","updatedAt":"2024-10-18T18:09:10.373Z","publishedAt":"2024-10-18T18:09:10.371Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":91,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:09:31.073Z","updatedAt":"2024-10-18T18:09:31.614Z","publishedAt":"2024-10-18T18:09:31.612Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":92,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i R-DYNAMIC HSE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:09:58.679Z","updatedAt":"2024-10-18T18:09:59.203Z","publishedAt":"2024-10-18T18:09:59.197Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":93,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i R-DYNAMIC S PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:10:22.939Z","updatedAt":"2024-10-18T18:10:23.516Z","publishedAt":"2024-10-18T18:10:23.514Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":94,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i R-DYNAMIC SE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:10:44.667Z","updatedAt":"2024-10-18T18:13:14.345Z","publishedAt":"2024-10-18T18:10:45.259Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":95,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i S PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:11:15.712Z","updatedAt":"2024-10-18T18:11:16.160Z","publishedAt":"2024-10-18T18:11:16.157Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":96,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i SE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:11:37.051Z","updatedAt":"2024-10-18T18:11:37.578Z","publishedAt":"2024-10-18T18:11:37.575Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":97,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Autobiography","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:12:04.174Z","updatedAt":"2024-10-18T18:12:04.710Z","publishedAt":"2024-10-18T18:12:04.709Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":98,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Dynamic HSE","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:12:28.895Z","updatedAt":"2024-10-18T18:12:32.937Z","publishedAt":"2024-10-18T18:12:32.933Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":99,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Dynamic S","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:12:55.907Z","updatedAt":"2024-10-18T18:12:56.410Z","publishedAt":"2024-10-18T18:12:56.407Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":100,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Dynamic SE","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:13:43.654Z","updatedAt":"2024-10-18T18:13:44.142Z","publishedAt":"2024-10-18T18:13:44.137Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":101,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV First Edition","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:14:06.061Z","updatedAt":"2024-10-18T18:14:06.564Z","publishedAt":"2024-10-18T18:14:06.562Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":102,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i Dynamic HSE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:14:28.803Z","updatedAt":"2024-10-18T18:14:29.359Z","publishedAt":"2024-10-18T18:14:29.354Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":103,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i Dynamic S PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:14:57.674Z","updatedAt":"2024-10-18T18:14:58.256Z","publishedAt":"2024-10-18T18:14:58.252Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":104,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i Dynamic SE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:15:26.823Z","updatedAt":"2024-10-18T18:15:27.412Z","publishedAt":"2024-10-18T18:15:27.406Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":105,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i HSE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:15:46.718Z","updatedAt":"2024-10-18T18:15:47.306Z","publishedAt":"2024-10-18T18:15:47.305Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":106,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:16:20.593Z","updatedAt":"2024-10-18T18:16:21.045Z","publishedAt":"2024-10-18T18:16:21.043Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":107,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i S PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:16:41.724Z","updatedAt":"2024-10-18T18:16:42.673Z","publishedAt":"2024-10-18T18:16:42.670Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":108,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i SE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:17:01.774Z","updatedAt":"2024-10-18T18:17:02.317Z","publishedAt":"2024-10-18T18:17:02.316Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":109,"attributes":{"marca":"Leap Motor","modelo":"T03 Luxury EV","capacidad":38.5,"autonomia":235,"createdAt":"2024-10-18T18:17:32.335Z","updatedAt":"2024-10-18T18:17:32.779Z","publishedAt":"2024-10-18T18:17:32.775Z","rendimiento":6.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":110,"attributes":{"marca":"Mercedez Benz","modelo":"C 350e 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":6.4,"autonomia":58,"createdAt":"2024-10-18T18:18:07.351Z","updatedAt":"2024-10-18T18:18:08.552Z","publishedAt":"2024-10-18T18:18:08.549Z","rendimiento":9.1,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":111,"attributes":{"marca":"Mercedez Benz","modelo":"C300e","capacidad":13.5,"autonomia":95,"createdAt":"2024-10-18T18:18:30.622Z","updatedAt":"2024-10-18T18:18:31.134Z","publishedAt":"2024-10-18T18:18:31.126Z","rendimiento":7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":112,"attributes":{"marca":"Mercedez Benz","modelo":"E 350e 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":6.4,"autonomia":45,"createdAt":"2024-10-18T18:18:53.198Z","updatedAt":"2024-10-18T18:18:53.634Z","publishedAt":"2024-10-18T18:18:53.630Z","rendimiento":7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":113,"attributes":{"marca":"Mercedez Benz","modelo":"EQA 350 4M","capacidad":100,"autonomia":590,"createdAt":"2024-10-18T18:19:15.153Z","updatedAt":"2024-10-18T18:19:15.654Z","publishedAt":"2024-10-18T18:19:15.650Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":114,"attributes":{"marca":"Mercedez Benz","modelo":"EQS 450Plus","capacidad":107.8,"autonomia":593,"createdAt":"2024-10-18T18:19:43.374Z","updatedAt":"2024-10-18T18:19:43.897Z","publishedAt":"2024-10-18T18:19:43.894Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":115,"attributes":{"marca":"Mercedez Benz","modelo":"GLC 300e 4Matic","capacidad":13.5,"autonomia":80,"createdAt":"2024-10-18T18:20:09.519Z","updatedAt":"2024-10-18T18:20:09.995Z","publishedAt":"2024-10-18T18:20:09.993Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":116,"attributes":{"marca":"Mer","modelo":"GLC 350e 4Matic 2,0 Lts. Station Wagon 5P.","capacidad":6.4,"autonomia":45,"createdAt":"2024-10-18T18:20:56.678Z","updatedAt":"2024-10-18T18:20:57.814Z","publishedAt":"2024-10-18T18:20:57.811Z","rendimiento":7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":117,"attributes":{"marca":"Mercedez Benz","modelo":"GLC 350e Coupé 4Matic 2,0 Lts. Station Wagon 4P","capacidad":6.4,"autonomia":48,"createdAt":"2024-10-18T18:21:18.951Z","updatedAt":"2024-10-18T18:21:19.435Z","publishedAt":"2024-10-18T18:21:19.433Z","rendimiento":7.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":118,"attributes":{"marca":"Mercedez Benz","modelo":"GLE 500e 4 Matic 3,0 Lts. Station Wagon 5P. ","capacidad":6.4,"autonomia":35,"createdAt":"2024-10-18T18:21:45.937Z","updatedAt":"2024-10-18T18:21:46.467Z","publishedAt":"2024-10-18T18:21:46.462Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":119,"attributes":{"marca":"Maxus","modelo":"e Deliver 3","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:22:28.835Z","updatedAt":"2024-10-18T18:22:29.198Z","publishedAt":"2024-10-18T18:22:29.194Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":120,"attributes":{"marca":"Maxus","modelo":"e Deliver 3 L","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:22:51.468Z","updatedAt":"2024-10-18T18:22:52.251Z","publishedAt":"2024-10-18T18:22:52.249Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":121,"attributes":{"marca":"Maxus","modelo":"e Deliver 3 L Plus","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:23:23.018Z","updatedAt":"2024-10-18T18:23:23.504Z","publishedAt":"2024-10-18T18:23:23.500Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":122,"attributes":{"marca":"Ma","modelo":"e Deliver 3 Plus","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:23:43.757Z","updatedAt":"2024-10-18T18:23:44.287Z","publishedAt":"2024-10-18T18:23:44.282Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":123,"attributes":{"marca":"Ma","modelo":"e Deliver 9 L2H2","capacidad":88,"autonomia":246,"createdAt":"2024-10-18T18:24:07.967Z","updatedAt":"2024-10-18T18:24:08.385Z","publishedAt":"2024-10-18T18:24:08.379Z","rendimiento":2.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":124,"attributes":{"marca":"Maxus","modelo":"e Deliver 9 L3H2","capacidad":88,"autonomia":246,"createdAt":"2024-10-18T18:24:29.792Z","updatedAt":"2024-10-18T18:24:30.322Z","publishedAt":"2024-10-18T18:24:30.319Z","rendimiento":2.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":125,"attributes":{"marca":"Maxus","modelo":"e-Deliver 3 CS","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:24:53.705Z","updatedAt":"2024-10-18T18:24:54.144Z","publishedAt":"2024-10-18T18:24:54.143Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":126,"attributes":{"marca":"Maxus","modelo":"E-Deliver 9 L3 Camioneta","capacidad":65.2,"autonomia":131,"createdAt":"2024-10-18T18:25:14.397Z","updatedAt":"2024-10-18T18:25:14.926Z","publishedAt":"2024-10-18T18:25:14.920Z","rendimiento":2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":127,"attributes":{"marca":"Maxus","modelo":"E-Deliver 9 L4 Camioneta","capacidad":65.2,"autonomia":131,"createdAt":"2024-10-18T18:25:40.884Z","updatedAt":"2024-10-18T18:25:41.370Z","publishedAt":"2024-10-18T18:25:41.368Z","rendimiento":2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":128,"attributes":{"marca":"Maxus","modelo":"EG50 AT EV","capacidad":52.5,"autonomia":215,"createdAt":"2024-10-18T18:26:03.976Z","updatedAt":"2024-10-18T18:26:04.516Z","publishedAt":"2024-10-18T18:26:04.514Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":129,"attributes":{"marca":"Maxus","modelo":"EG50 AT EV 5 Pasajeros","capacidad":52.5,"autonomia":215,"createdAt":"2024-10-18T18:26:31.049Z","updatedAt":"2024-10-18T18:26:31.466Z","publishedAt":"2024-10-18T18:26:31.462Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}}],"meta":{"pagination":{"page":1,"pageSize":1000,"pageCount":1,"total":129}}}
+        const response = {"data":[{"id":1,"attributes":{"marca":"Audi","modelo":"e-tron","capacidad":83.6,"autonomia":369,"createdAt":"2024-09-30T02:51:04.569Z","updatedAt":"2024-09-30T04:01:08.857Z","publishedAt":"2024-09-30T02:51:09.202Z","rendimiento":4.4,"T1":null,"T2":1,"T2SC":null,"GPTDC":null,"CHADEMO":null,"CCST2":1,"tipo":"Eléctrico Puro"}},{"id":2,"attributes":{"marca":"Audi","modelo":"RS e-tron GT","capacidad":83.7,"autonomia":435,"createdAt":"2024-10-11T15:20:56.085Z","updatedAt":"2024-10-11T15:21:36.527Z","publishedAt":"2024-10-11T15:20:59.587Z","rendimiento":5.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":3,"attributes":{"marca":"Baic","modelo":"EU5 EV SDN AT","capacidad":49.6,"autonomia":228,"createdAt":"2024-10-11T15:22:28.564Z","updatedAt":"2024-10-11T15:22:30.337Z","publishedAt":"2024-10-11T15:22:30.335Z","rendimiento":4.6,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":4,"attributes":{"marca":"BMW","modelo":"330e Iperformance 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":49,"autonomia":64,"createdAt":"2024-10-11T15:23:04.861Z","updatedAt":"2024-10-11T15:23:05.507Z","publishedAt":"2024-10-11T15:23:05.505Z","rendimiento":8.4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":5,"attributes":{"marca":"BMW","modelo":"330e Sedán","capacidad":12,"autonomia":78,"createdAt":"2024-10-11T15:23:43.131Z","updatedAt":"2024-10-11T15:24:39.537Z","publishedAt":"2024-10-11T15:24:39.535Z","rendimiento":6.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":6,"attributes":{"marca":"BMW","modelo":"330e Sedán 2","capacidad":12,"autonomia":71,"createdAt":"2024-10-11T15:24:33.579Z","updatedAt":"2024-10-11T15:24:34.978Z","publishedAt":"2024-10-11T15:24:34.976Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":7,"attributes":{"marca":"BMW","modelo":"530e iPerformance 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":12,"autonomia":85,"createdAt":"2024-10-11T15:25:12.920Z","updatedAt":"2024-10-11T15:25:13.450Z","publishedAt":"2024-10-11T15:25:13.448Z","rendimiento":7.1,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":null,"tipo":"Híbrido con Recarga Exterior"}},{"id":8,"attributes":{"marca":"BMW","modelo":"530e Sedán","capacidad":12,"autonomia":68,"createdAt":"2024-10-11T15:25:30.970Z","updatedAt":"2024-10-11T15:25:55.716Z","publishedAt":"2024-10-11T15:25:55.715Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":9,"attributes":{"marca":"BMW","modelo":"740e iPerformance 2,0 Lts. Sedán 4P. T/A Híbrid","capacidad":11.7,"autonomia":93,"createdAt":"2024-10-11T15:26:28.174Z","updatedAt":"2024-10-11T15:26:28.961Z","publishedAt":"2024-10-11T15:26:28.958Z","rendimiento":7.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":10,"attributes":{"marca":"BMW","modelo":"740le iPerformance 2,0 Lts. Sedán 4P. T/A Híbrido 2","capacidad":11.7,"autonomia":93,"createdAt":"2024-10-11T15:27:19.571Z","updatedAt":"2024-10-11T15:27:20.068Z","publishedAt":"2024-10-11T15:27:20.065Z","rendimiento":7.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":11,"attributes":{"marca":"BMW","modelo":"745e Sedán","capacidad":12,"autonomia":68,"createdAt":"2024-10-11T15:29:24.327Z","updatedAt":"2024-10-11T15:29:25.384Z","publishedAt":"2024-10-11T15:29:25.378Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":12,"attributes":{"marca":"BMW","modelo":"745Le Sedán","capacidad":12,"autonomia":68,"createdAt":"2024-10-11T15:30:00.487Z","updatedAt":"2024-10-11T15:30:01.025Z","publishedAt":"2024-10-11T15:30:01.022Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":13,"attributes":{"marca":"BMW","modelo":"i3 120Ah","capacidad":42.3,"autonomia":309,"createdAt":"2024-10-11T15:30:33.111Z","updatedAt":"2024-10-11T15:30:33.586Z","publishedAt":"2024-10-11T15:30:33.585Z","rendimiento":7.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":14,"attributes":{"marca":"BMW","modelo":"i3 94Ah Hatchback 5P. T/A Motor Eléctrico","capacidad":32.9,"autonomia":250,"createdAt":"2024-10-11T15:31:00.745Z","updatedAt":"2024-10-11T15:31:01.343Z","publishedAt":"2024-10-11T15:31:01.342Z","rendimiento":7.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":15,"attributes":{"marca":"BMW","modelo":"I3s 120Ah","capacidad":42.3,"autonomia":309,"createdAt":"2024-10-11T15:31:26.567Z","updatedAt":"2024-10-11T15:31:27.435Z","publishedAt":"2024-10-11T15:31:27.433Z","rendimiento":7.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":16,"attributes":{"marca":"BMW","modelo":"i4 eDrive40 Gran Coupé","capacidad":84,"autonomia":529,"createdAt":"2024-10-11T15:31:57.216Z","updatedAt":"2024-10-11T15:31:57.787Z","publishedAt":"2024-10-11T15:31:57.786Z","rendimiento":6.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":17,"attributes":{"marca":"BMW","modelo":"I8 1,5 Lts. Coupé 3P. T/A 4x4 Híbrido","capacidad":11.6,"autonomia":193,"createdAt":"2024-10-11T15:32:29.887Z","updatedAt":"2024-10-11T15:32:30.409Z","publishedAt":"2024-10-11T15:32:30.407Z","rendimiento":16.6,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":18,"attributes":{"marca":"BMW","modelo":"I8 1,5 Lts. Roadster 3P. T/A 4x4 Híbrido 2","capacidad":11.6,"autonomia":193,"createdAt":"2024-10-11T15:33:11.139Z","updatedAt":"2024-10-11T15:33:11.680Z","publishedAt":"2024-10-11T15:33:11.677Z","rendimiento":16.6,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":19,"attributes":{"marca":"BMW","modelo":"i8 PHEV 1,5 Lts. DOHC Coupé 2P. T/A Motor Otto","capacidad":7.1,"autonomia":60,"createdAt":"2024-10-11T15:33:47.688Z","updatedAt":"2024-10-11T15:33:48.368Z","publishedAt":"2024-10-11T15:33:48.365Z","rendimiento":8.4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":20,"attributes":{"marca":"BMW","modelo":"iX xDrive30","capacidad":66.5,"autonomia":412,"createdAt":"2024-10-11T15:34:17.748Z","updatedAt":"2024-10-11T15:34:18.332Z","publishedAt":"2024-10-11T15:34:18.331Z","rendimiento":6.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":21,"attributes":{"marca":"BMW","modelo":"iX3 M Station Wagon","capacidad":80,"autonomia":392,"createdAt":"2024-10-11T15:34:44.842Z","updatedAt":"2024-10-11T15:34:45.394Z","publishedAt":"2024-10-11T15:34:45.386Z","rendimiento":4.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":22,"attributes":{"marca":"BMW","modelo":"X1 xDrive25e","capacidad":16.3,"autonomia":90,"createdAt":"2024-10-11T15:35:15.446Z","updatedAt":"2024-10-11T15:35:16.001Z","publishedAt":"2024-10-11T15:35:15.999Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":23,"attributes":{"marca":"BMW","modelo":"X3 xDrive30e","capacidad":12,"autonomia":66,"createdAt":"2024-10-11T15:35:45.841Z","updatedAt":"2024-10-11T15:35:46.473Z","publishedAt":"2024-10-11T15:35:46.471Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":24,"attributes":{"marca":"BMW","modelo":"X5 xDrive40e iPerformance 2,0 Lts. Station Wagon","capacidad":9.2,"autonomia":60,"createdAt":"2024-10-11T15:36:13.662Z","updatedAt":"2024-10-11T15:36:14.132Z","publishedAt":"2024-10-11T15:36:14.130Z","rendimiento":6.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":25,"attributes":{"marca":"BMW","modelo":"X5 xDrive45e","capacidad":24.1,"autonomia":94,"createdAt":"2024-10-11T15:36:43.428Z","updatedAt":"2024-10-11T15:36:43.993Z","publishedAt":"2024-10-11T15:36:43.988Z","rendimiento":3.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":26,"attributes":{"marca":"BMW","modelo":"X5 xDrive50e M Sport LCI","capacidad":68.3,"autonomia":259,"createdAt":"2024-10-11T15:37:14.299Z","updatedAt":"2024-10-11T15:37:14.870Z","publishedAt":"2024-10-11T15:37:14.867Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":27,"attributes":{"marca":"BMW","modelo":"X5 xDrive50e xLine LCI","capacidad":68.3,"autonomia":259,"createdAt":"2024-10-11T15:37:40.010Z","updatedAt":"2024-10-11T15:37:40.570Z","publishedAt":"2024-10-11T15:37:40.565Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":28,"attributes":{"marca":"BMW","modelo":"Station Wagon","capacidad":29.5,"autonomia":97,"createdAt":"2024-10-11T15:38:26.807Z","updatedAt":"2024-10-11T15:38:27.481Z","publishedAt":"2024-10-11T15:38:27.477Z","rendimiento":3.3,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":29,"attributes":{"marca":"BYD","modelo":"BYD D1","capacidad":53.6,"autonomia":375,"createdAt":"2024-10-11T15:39:00.887Z","updatedAt":"2024-10-11T15:39:01.497Z","publishedAt":"2024-10-11T15:39:01.490Z","rendimiento":7,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":30,"attributes":{"marca":"BYD","modelo":"BYD M3","capacidad":50.3,"autonomia":231,"createdAt":"2024-10-11T15:39:29.789Z","updatedAt":"2024-10-11T15:39:30.412Z","publishedAt":"2024-10-11T15:39:30.411Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":31,"attributes":{"marca":"BYD","modelo":"BYD T3","capacidad":50.3,"autonomia":231,"createdAt":"2024-10-11T15:39:59.332Z","updatedAt":"2024-10-11T15:40:00.626Z","publishedAt":"2024-10-11T15:40:00.624Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":32,"attributes":{"marca":"BYD","modelo":"BYD Tang EV","capacidad":82.8,"autonomia":464,"createdAt":"2024-10-11T15:40:33.576Z","updatedAt":"2024-10-11T15:40:34.786Z","publishedAt":"2024-10-11T15:40:34.781Z","rendimiento":5.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":33,"attributes":{"marca":"BYD","modelo":"BYD Tang EV STE","capacidad":82.8,"autonomia":464,"createdAt":"2024-10-11T15:41:04.916Z","updatedAt":"2024-10-11T15:41:05.502Z","publishedAt":"2024-10-11T15:41:05.498Z","rendimiento":5.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":34,"attributes":{"marca":"BYD","modelo":"Dolphin","capacidad":44.9,"autonomia":301,"createdAt":"2024-10-11T15:41:34.149Z","updatedAt":"2024-10-11T15:41:34.885Z","publishedAt":"2024-10-11T15:41:34.879Z","rendimiento":6.7,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":35,"attributes":{"marca":"BYD","modelo":"e5 Sedán 4P. T/A Motor Eléctrico","capacidad":60.6,"autonomia":327,"createdAt":"2024-10-11T15:56:57.204Z","updatedAt":"2024-10-11T15:56:57.874Z","publishedAt":"2024-10-11T15:56:57.869Z","rendimiento":5.4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":36,"attributes":{"marca":"BYD","modelo":"Han EV GS","capacidad":85.4,"autonomia":425,"createdAt":"2024-10-11T15:57:29.164Z","updatedAt":"2024-10-11T15:57:29.671Z","publishedAt":"2024-10-11T15:57:29.667Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":37,"attributes":{"marca":"BYD","modelo":"Qin Plus DM-i","capacidad":8.3,"autonomia":74,"createdAt":"2024-10-11T15:58:04.295Z","updatedAt":"2024-10-11T15:58:04.837Z","publishedAt":"2024-10-11T15:58:04.835Z","rendimiento":8.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":38,"attributes":{"marca":"BYD","modelo":"Song Plus DMI","capacidad":8.3,"autonomia":71,"createdAt":"2024-10-11T15:58:44.021Z","updatedAt":"2024-10-11T15:58:44.743Z","publishedAt":"2024-10-11T15:58:44.741Z","rendimiento":8.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":39,"attributes":{"marca":"BYD","modelo":"TANG EV","capacidad":86.4,"autonomia":363,"createdAt":"2024-10-11T15:59:15.102Z","updatedAt":"2024-10-11T15:59:15.680Z","publishedAt":"2024-10-11T15:59:15.678Z","rendimiento":4.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":40,"attributes":{"marca":"BYD","modelo":"Yuan Plus","capacidad":49.9,"autonomia":290,"createdAt":"2024-10-11T15:59:51.431Z","updatedAt":"2024-10-11T15:59:51.965Z","publishedAt":"2024-10-11T15:59:51.963Z","rendimiento":5.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":41,"attributes":{"marca":"BYD","modelo":"Yuan Plus GS","capacidad":150,"autonomia":870,"createdAt":"2024-10-11T16:00:32.574Z","updatedAt":"2024-10-11T16:00:33.055Z","publishedAt":"2024-10-11T16:00:33.051Z","rendimiento":5.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":42,"attributes":{"marca":"Chery","modelo":"Tiggo 8 Pro PHEV","capacidad":19.3,"autonomia":89,"createdAt":"2024-10-11T16:01:02.290Z","updatedAt":"2024-10-11T16:01:02.979Z","publishedAt":"2024-10-11T16:01:02.975Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":43,"attributes":{"marca":"Chevrolet","modelo":"Bolt EUV","capacidad":66,"autonomia":389,"createdAt":"2024-10-11T16:01:28.400Z","updatedAt":"2024-10-11T16:01:28.874Z","publishedAt":"2024-10-11T16:01:28.871Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":44,"attributes":{"marca":"Chevrolet","modelo":"Bolt EV 2","capacidad":60,"autonomia":359,"createdAt":"2024-10-11T16:02:15.678Z","updatedAt":"2024-10-11T16:02:16.229Z","publishedAt":"2024-10-11T16:02:16.226Z","rendimiento":6,"T1":1,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":45,"attributes":{"marca":"Citroen","modelo":"Berlingo Furgón 2P. T/A Motor Eléctrico","capacidad":22.5,"autonomia":131,"createdAt":"2024-10-11T16:02:49.481Z","updatedAt":"2024-10-11T16:02:49.962Z","publishedAt":"2024-10-11T16:02:49.959Z","rendimiento":5.8,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":1,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":46,"attributes":{"marca":"Citroen","modelo":"E-Berlingo Electrico","capacidad":50,"autonomia":290,"createdAt":"2024-10-11T16:03:29.603Z","updatedAt":"2024-10-11T16:03:30.121Z","publishedAt":"2024-10-11T16:03:30.118Z","rendimiento":5.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":47,"attributes":{"marca":"DFLM","modelo":"S50EV","capacidad":59.6,"autonomia":290,"createdAt":"2024-10-11T16:04:00.640Z","updatedAt":"2024-10-11T16:04:01.184Z","publishedAt":"2024-10-11T16:04:01.179Z","rendimiento":5.1,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":48,"attributes":{"marca":"DFLM","modelo":"S50EVE","capacidad":59.6,"autonomia":290,"createdAt":"2024-10-11T16:04:30.746Z","updatedAt":"2024-10-11T16:04:31.224Z","publishedAt":"2024-10-11T16:04:31.222Z","rendimiento":5.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":49,"attributes":{"marca":"DFM","modelo":"Aeolus E70","capacidad":52.9,"autonomia":312,"createdAt":"2024-10-11T16:05:01.201Z","updatedAt":"2024-10-11T16:05:01.717Z","publishedAt":"2024-10-11T16:05:01.712Z","rendimiento":5.9,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":50,"attributes":{"marca":"DFSK","modelo":"EC35 Cargo Van","capacidad":38.7,"autonomia":159,"createdAt":"2024-10-11T16:05:28.466Z","updatedAt":"2024-10-11T16:05:28.973Z","publishedAt":"2024-10-11T16:05:28.970Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":51,"attributes":{"marca":"DFSK","modelo":"EC35 Cargo Van 2R","capacidad":38.7,"autonomia":159,"createdAt":"2024-10-11T16:05:54.488Z","updatedAt":"2024-10-11T16:06:01.396Z","publishedAt":"2024-10-11T16:06:01.394Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":52,"attributes":{"marca":"DFSK","modelo":"Seres E3","capacidad":53,"autonomia":233,"createdAt":"2024-10-18T17:49:39.238Z","updatedAt":"2024-10-18T17:50:24.815Z","publishedAt":"2024-10-18T17:50:24.813Z","rendimiento":4.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":53,"attributes":{"marca":"Dongfeng","modelo":"e-City MT3.5","capacidad":66.8,"autonomia":307,"createdAt":"2024-10-18T17:50:10.984Z","updatedAt":"2024-10-18T17:50:27.557Z","publishedAt":"2024-10-18T17:50:27.555Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":54,"attributes":{"marca":"Dongfeng","modelo":"e-City MT3.5 Furgon","capacidad":66.8,"autonomia":307,"createdAt":"2024-10-18T17:50:54.886Z","updatedAt":"2024-10-18T17:50:56.401Z","publishedAt":"2024-10-18T17:50:56.397Z","rendimiento":4.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":55,"attributes":{"marca":"Dongfeng","modelo":"e-Lite CV3","capacidad":41.9,"autonomia":226,"createdAt":"2024-10-18T17:51:21.934Z","updatedAt":"2024-10-18T17:51:23.846Z","publishedAt":"2024-10-18T17:51:23.843Z","rendimiento":5.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":56,"attributes":{"marca":"DS","modelo":"DS3 Crossback Electrico","capacidad":50,"autonomia":285,"createdAt":"2024-10-18T17:51:51.490Z","updatedAt":"2024-10-18T17:51:52.009Z","publishedAt":"2024-10-18T17:51:52.006Z","rendimiento":5.7,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":57,"attributes":{"marca":"DS","modelo":"DS7 Crossback 1.6 THP 4x4 Automático","capacidad":13.2,"autonomia":63,"createdAt":"2024-10-18T17:52:32.591Z","updatedAt":"2024-10-18T17:52:33.143Z","publishedAt":"2024-10-18T17:52:33.140Z","rendimiento":4.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":58,"attributes":{"marca":"Farizon","modelo":"E6 Furgón","capacidad":50.2,"autonomia":206,"createdAt":"2024-10-18T17:53:04.232Z","updatedAt":"2024-10-18T17:53:04.786Z","publishedAt":"2024-10-18T17:53:04.782Z","rendimiento":4.1,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":59,"attributes":{"marca":"Ferrari","modelo":"296 GTB","capacidad":7.5,"autonomia":54,"createdAt":"2024-10-18T17:53:41.380Z","updatedAt":"2024-10-18T17:53:49.450Z","publishedAt":"2024-10-18T17:53:49.443Z","rendimiento":7.2,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":60,"attributes":{"marca":"Ferrari","modelo":"296 GTS","capacidad":7.5,"autonomia":54,"createdAt":"2024-10-18T17:54:15.980Z","updatedAt":"2024-10-18T17:54:16.666Z","publishedAt":"2024-10-18T17:54:16.664Z","rendimiento":7.2,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":61,"attributes":{"marca":"Ferrari","modelo":"SF90 Spider","capacidad":7.9,"autonomia":85,"createdAt":"2024-10-18T17:54:45.967Z","updatedAt":"2024-10-18T17:54:46.626Z","publishedAt":"2024-10-18T17:54:46.622Z","rendimiento":10.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":62,"attributes":{"marca":"Ferrari","modelo":"SF90 Stradale Coupe","capacidad":7.9,"autonomia":85,"createdAt":"2024-10-18T17:55:10.254Z","updatedAt":"2024-10-18T17:55:10.821Z","publishedAt":"2024-10-18T17:55:10.791Z","rendimiento":10.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":63,"attributes":{"marca":"Fest","modelo":"E Box-M","capacidad":41.9,"autonomia":226,"createdAt":"2024-10-18T17:55:36.409Z","updatedAt":"2024-10-18T17:55:37.054Z","publishedAt":"2024-10-18T17:55:37.052Z","rendimiento":5.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":64,"attributes":{"marca":"Ford","modelo":"E-Transit","capacidad":75.7,"autonomia":303,"createdAt":"2024-10-18T17:56:06.569Z","updatedAt":"2024-10-18T17:56:07.200Z","publishedAt":"2024-10-18T17:56:07.199Z","rendimiento":4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":65,"attributes":{"marca":"Geely","modelo":"Emgrand EV500","capacidad":50,"autonomia":255,"createdAt":"2024-10-18T17:56:45.886Z","updatedAt":"2024-10-18T17:56:46.301Z","publishedAt":"2024-10-18T17:56:46.299Z","rendimiento":5.1,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":66,"attributes":{"marca":"Geely","modelo":"Geometry C","capacidad":72.4,"autonomia":290,"createdAt":"2024-10-18T17:57:16.288Z","updatedAt":"2024-10-18T17:57:16.811Z","publishedAt":"2024-10-18T17:57:16.809Z","rendimiento":4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":67,"attributes":{"marca":"Geely","modelo":"Geometry C GK","capacidad":54.9,"autonomia":230,"createdAt":"2024-10-18T17:57:50.125Z","updatedAt":"2024-10-18T17:57:51.978Z","publishedAt":"2024-10-18T17:57:51.974Z","rendimiento":4.2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":68,"attributes":{"marca":"Hyundai","modelo":"Ioniq AE Automóvil 4P. T/A","capacidad":28,"autonomia":246,"createdAt":"2024-10-18T17:58:20.528Z","updatedAt":"2024-10-18T17:58:21.072Z","publishedAt":"2024-10-18T17:58:21.070Z","rendimiento":8.8,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":1,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":69,"attributes":{"marca":"Hyundai","modelo":"Ioniq AE PE","capacidad":38.8,"autonomia":206,"createdAt":"2024-10-18T17:58:49.143Z","updatedAt":"2024-10-18T17:58:49.667Z","publishedAt":"2024-10-18T17:58:49.666Z","rendimiento":5.3,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":1,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":70,"attributes":{"marca":"Hyundai","modelo":"Ioniq5 NE EV AT 2WD (Batería Estándar)","capacidad":58,"autonomia":290,"createdAt":"2024-10-18T17:59:23.274Z","updatedAt":"2024-10-18T17:59:24.241Z","publishedAt":"2024-10-18T17:59:24.239Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":71,"attributes":{"marca":"Hyundai","modelo":"Ioniq5 NE EV AT 2WD (Batería Extendida)","capacidad":72.6,"autonomia":363,"createdAt":"2024-10-18T17:59:49.938Z","updatedAt":"2024-10-18T17:59:50.589Z","publishedAt":"2024-10-18T17:59:50.585Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":72,"attributes":{"marca":"Hyundai","modelo":"Ioniq5 NE EV AT 4WD","capacidad":72.6,"autonomia":363,"createdAt":"2024-10-18T18:00:14.223Z","updatedAt":"2024-10-18T18:00:14.776Z","publishedAt":"2024-10-18T18:00:14.773Z","rendimiento":5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":73,"attributes":{"marca":"Hyundai","modelo":"Kona OS EV SUV AT Motor Electrico","capacidad":64,"autonomia":339,"createdAt":"2024-10-18T18:00:51.127Z","updatedAt":"2024-10-18T18:00:51.611Z","publishedAt":"2024-10-18T18:00:51.608Z","rendimiento":5.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":74,"attributes":{"marca":"Hyundai","modelo":"Kona OS EV SUV T/A Motor Electrico","capacidad":39.2,"autonomia":239,"createdAt":"2024-10-18T18:01:26.363Z","updatedAt":"2024-10-18T18:01:26.993Z","publishedAt":"2024-10-18T18:01:26.991Z","rendimiento":6.1,"T1":1,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":75,"attributes":{"marca":"Jac","modelo":"e-JS1 AT","capacidad":90,"autonomia":612,"createdAt":"2024-10-18T18:01:54.040Z","updatedAt":"2024-10-18T18:01:54.585Z","publishedAt":"2024-10-18T18:01:54.582Z","rendimiento":6.8,"T1":0,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":76,"attributes":{"marca":"Jac","modelo":"e-S2 TA","capacidad":40,"autonomia":212,"createdAt":"2024-10-18T18:02:22.059Z","updatedAt":"2024-10-18T18:02:22.602Z","publishedAt":"2024-10-18T18:02:22.597Z","rendimiento":5.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":77,"attributes":{"marca":"Jac","modelo":"Refine M3 EV AT","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:02:53.753Z","updatedAt":"2024-10-18T18:02:54.284Z","publishedAt":"2024-10-18T18:02:54.278Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":78,"attributes":{"marca":"Jaguar","modelo":"I-PACE EV400 HSE","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:03:22.558Z","updatedAt":"2024-10-18T18:03:23.114Z","publishedAt":"2024-10-18T18:03:23.111Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":79,"attributes":{"marca":"Jaguar","modelo":"I-Pace EV400 R-Dynamic HSE PHEV","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:03:47.687Z","updatedAt":"2024-10-18T18:03:48.519Z","publishedAt":"2024-10-18T18:03:48.516Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":80,"attributes":{"marca":"Jaguar","modelo":"I-Pace EV400 R-Dynamic S PHEV","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:04:17.375Z","updatedAt":"2024-10-18T18:04:17.860Z","publishedAt":"2024-10-18T18:04:17.857Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":81,"attributes":{"marca":"Jaguar","modelo":"I-Pace EV400 R-Dynamic SE PHEV","capacidad":90,"autonomia":387,"createdAt":"2024-10-18T18:04:45.914Z","updatedAt":"2024-10-18T18:04:46.391Z","publishedAt":"2024-10-18T18:04:46.389Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":82,"attributes":{"marca":"JMC","modelo":"Touring EV","capacidad":60.2,"autonomia":211,"createdAt":"2024-10-18T18:05:11.401Z","updatedAt":"2024-10-18T18:05:16.801Z","publishedAt":"2024-10-18T18:05:16.798Z","rendimiento":3.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":83,"attributes":{"marca":"JMC","modelo":"Vigus EV","capacidad":60.2,"autonomia":211,"createdAt":"2024-10-18T18:05:39.023Z","updatedAt":"2024-10-18T18:05:39.585Z","publishedAt":"2024-10-18T18:05:39.580Z","rendimiento":3.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":84,"attributes":{"marca":"Kia","modelo":"EV6 EV GT-LINE 77.4KWH AWD","capacidad":77.4,"autonomia":457,"createdAt":"2024-10-18T18:06:01.524Z","updatedAt":"2024-10-18T18:06:02.011Z","publishedAt":"2024-10-18T18:06:02.003Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":85,"attributes":{"marca":"Kia","modelo":"Niro EV 64.8KWH 2WD","capacidad":64.8,"autonomia":311,"createdAt":"2024-10-18T18:06:27.640Z","updatedAt":"2024-10-18T18:06:28.141Z","publishedAt":"2024-10-18T18:06:28.134Z","rendimiento":4.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":86,"attributes":{"marca":"Kia","modelo":"Soul Electrico (SK3 EV)","capacidad":64,"autonomia":346,"createdAt":"2024-10-18T18:07:00.347Z","updatedAt":"2024-10-18T18:07:00.857Z","publishedAt":"2024-10-18T18:07:00.850Z","rendimiento":5.4,"T1":1,"T2":0,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":87,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i Autobiography PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:07:31.810Z","updatedAt":"2024-10-18T18:07:32.374Z","publishedAt":"2024-10-18T18:07:32.373Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":88,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i Bronze Colletion PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:08:07.381Z","updatedAt":"2024-10-18T18:08:08.549Z","publishedAt":"2024-10-18T18:08:08.543Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":89,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i Edition PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:08:47.636Z","updatedAt":"2024-10-18T18:08:48.343Z","publishedAt":"2024-10-18T18:08:48.339Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":90,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i HSE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:09:08.426Z","updatedAt":"2024-10-18T18:09:10.373Z","publishedAt":"2024-10-18T18:09:10.371Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":91,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:09:31.073Z","updatedAt":"2024-10-18T18:09:31.614Z","publishedAt":"2024-10-18T18:09:31.612Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":92,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i R-DYNAMIC HSE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:09:58.679Z","updatedAt":"2024-10-18T18:09:59.203Z","publishedAt":"2024-10-18T18:09:59.197Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":93,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i R-DYNAMIC S PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:10:22.939Z","updatedAt":"2024-10-18T18:10:23.516Z","publishedAt":"2024-10-18T18:10:23.514Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":94,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i R-DYNAMIC SE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:10:44.667Z","updatedAt":"2024-10-18T18:13:14.345Z","publishedAt":"2024-10-18T18:10:45.259Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":95,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i S PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:11:15.712Z","updatedAt":"2024-10-18T18:11:16.160Z","publishedAt":"2024-10-18T18:11:16.157Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":96,"attributes":{"marca":"Land Rover","modelo":"Range Rover Evoque 1.5i SE PHEV","capacidad":14.9,"autonomia":82,"createdAt":"2024-10-18T18:11:37.051Z","updatedAt":"2024-10-18T18:11:37.578Z","publishedAt":"2024-10-18T18:11:37.575Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":97,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Autobiography","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:12:04.174Z","updatedAt":"2024-10-18T18:12:04.710Z","publishedAt":"2024-10-18T18:12:04.709Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":98,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Dynamic HSE","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:12:28.895Z","updatedAt":"2024-10-18T18:12:32.937Z","publishedAt":"2024-10-18T18:12:32.933Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":99,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Dynamic S","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:12:55.907Z","updatedAt":"2024-10-18T18:12:56.410Z","publishedAt":"2024-10-18T18:12:56.407Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":100,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV Dynamic SE","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:13:43.654Z","updatedAt":"2024-10-18T18:13:44.142Z","publishedAt":"2024-10-18T18:13:44.137Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":101,"attributes":{"marca":"Land Rover","modelo":"Range Rover Sport 3.0i PHEV First Edition","capacidad":38.2,"autonomia":145,"createdAt":"2024-10-18T18:14:06.061Z","updatedAt":"2024-10-18T18:14:06.564Z","publishedAt":"2024-10-18T18:14:06.562Z","rendimiento":3.8,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":102,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i Dynamic HSE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:14:28.803Z","updatedAt":"2024-10-18T18:14:29.359Z","publishedAt":"2024-10-18T18:14:29.354Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":103,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i Dynamic S PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:14:57.674Z","updatedAt":"2024-10-18T18:14:58.256Z","publishedAt":"2024-10-18T18:14:58.252Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":104,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i Dynamic SE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:15:26.823Z","updatedAt":"2024-10-18T18:15:27.412Z","publishedAt":"2024-10-18T18:15:27.406Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":105,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i HSE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:15:46.718Z","updatedAt":"2024-10-18T18:15:47.306Z","publishedAt":"2024-10-18T18:15:47.305Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":106,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:16:20.593Z","updatedAt":"2024-10-18T18:16:21.045Z","publishedAt":"2024-10-18T18:16:21.043Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":107,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i S PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:16:41.724Z","updatedAt":"2024-10-18T18:16:42.673Z","publishedAt":"2024-10-18T18:16:42.670Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":108,"attributes":{"marca":"Land Rover","modelo":"Range Rover Velar 2.0i SE PHEV","capacidad":15.4,"autonomia":62,"createdAt":"2024-10-18T18:17:01.774Z","updatedAt":"2024-10-18T18:17:02.317Z","publishedAt":"2024-10-18T18:17:02.316Z","rendimiento":4,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":109,"attributes":{"marca":"Leap Motor","modelo":"T03 Luxury EV","capacidad":38.5,"autonomia":235,"createdAt":"2024-10-18T18:17:32.335Z","updatedAt":"2024-10-18T18:17:32.779Z","publishedAt":"2024-10-18T18:17:32.775Z","rendimiento":6.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":110,"attributes":{"marca":"Mercedez Benz","modelo":"C 350e 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":6.4,"autonomia":58,"createdAt":"2024-10-18T18:18:07.351Z","updatedAt":"2024-10-18T18:18:08.552Z","publishedAt":"2024-10-18T18:18:08.549Z","rendimiento":9.1,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":111,"attributes":{"marca":"Mercedez Benz","modelo":"C300e","capacidad":13.5,"autonomia":95,"createdAt":"2024-10-18T18:18:30.622Z","updatedAt":"2024-10-18T18:18:31.134Z","publishedAt":"2024-10-18T18:18:31.126Z","rendimiento":7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":112,"attributes":{"marca":"Mercedez Benz","modelo":"E 350e 2,0 Lts. Sedán 4P. T/A Híbrido","capacidad":6.4,"autonomia":45,"createdAt":"2024-10-18T18:18:53.198Z","updatedAt":"2024-10-18T18:18:53.634Z","publishedAt":"2024-10-18T18:18:53.630Z","rendimiento":7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":113,"attributes":{"marca":"Mercedez Benz","modelo":"EQA 350 4M","capacidad":100,"autonomia":590,"createdAt":"2024-10-18T18:19:15.153Z","updatedAt":"2024-10-18T18:19:15.654Z","publishedAt":"2024-10-18T18:19:15.650Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":114,"attributes":{"marca":"Mercedez Benz","modelo":"EQS 450Plus","capacidad":107.8,"autonomia":593,"createdAt":"2024-10-18T18:19:43.374Z","updatedAt":"2024-10-18T18:19:43.897Z","publishedAt":"2024-10-18T18:19:43.894Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":115,"attributes":{"marca":"Mercedez Benz","modelo":"GLC 300e 4Matic","capacidad":13.5,"autonomia":80,"createdAt":"2024-10-18T18:20:09.519Z","updatedAt":"2024-10-18T18:20:09.995Z","publishedAt":"2024-10-18T18:20:09.993Z","rendimiento":5.9,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":116,"attributes":{"marca":"Mer","modelo":"GLC 350e 4Matic 2,0 Lts. Station Wagon 5P.","capacidad":6.4,"autonomia":45,"createdAt":"2024-10-18T18:20:56.678Z","updatedAt":"2024-10-18T18:20:57.814Z","publishedAt":"2024-10-18T18:20:57.811Z","rendimiento":7,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":117,"attributes":{"marca":"Mercedez Benz","modelo":"GLC 350e Coupé 4Matic 2,0 Lts. Station Wagon 4P","capacidad":6.4,"autonomia":48,"createdAt":"2024-10-18T18:21:18.951Z","updatedAt":"2024-10-18T18:21:19.435Z","publishedAt":"2024-10-18T18:21:19.433Z","rendimiento":7.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":118,"attributes":{"marca":"Mercedez Benz","modelo":"GLE 500e 4 Matic 3,0 Lts. Station Wagon 5P. ","capacidad":6.4,"autonomia":35,"createdAt":"2024-10-18T18:21:45.937Z","updatedAt":"2024-10-18T18:21:46.467Z","publishedAt":"2024-10-18T18:21:46.462Z","rendimiento":5.5,"T1":0,"T2":1,"T2SC":0,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Híbrido con Recarga Exterior"}},{"id":119,"attributes":{"marca":"Maxus","modelo":"e Deliver 3","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:22:28.835Z","updatedAt":"2024-10-18T18:22:29.198Z","publishedAt":"2024-10-18T18:22:29.194Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":120,"attributes":{"marca":"Maxus","modelo":"e Deliver 3 L","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:22:51.468Z","updatedAt":"2024-10-18T18:22:52.251Z","publishedAt":"2024-10-18T18:22:52.249Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":121,"attributes":{"marca":"Maxus","modelo":"e Deliver 3 L Plus","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:23:23.018Z","updatedAt":"2024-10-18T18:23:23.504Z","publishedAt":"2024-10-18T18:23:23.500Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":122,"attributes":{"marca":"Ma","modelo":"e Deliver 3 Plus","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:23:43.757Z","updatedAt":"2024-10-18T18:23:44.287Z","publishedAt":"2024-10-18T18:23:44.282Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":123,"attributes":{"marca":"Ma","modelo":"e Deliver 9 L2H2","capacidad":88,"autonomia":246,"createdAt":"2024-10-18T18:24:07.967Z","updatedAt":"2024-10-18T18:24:08.385Z","publishedAt":"2024-10-18T18:24:08.379Z","rendimiento":2.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":124,"attributes":{"marca":"Maxus","modelo":"e Deliver 9 L3H2","capacidad":88,"autonomia":246,"createdAt":"2024-10-18T18:24:29.792Z","updatedAt":"2024-10-18T18:24:30.322Z","publishedAt":"2024-10-18T18:24:30.319Z","rendimiento":2.8,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":125,"attributes":{"marca":"Maxus","modelo":"e-Deliver 3 CS","capacidad":50.2,"autonomia":216,"createdAt":"2024-10-18T18:24:53.705Z","updatedAt":"2024-10-18T18:24:54.144Z","publishedAt":"2024-10-18T18:24:54.143Z","rendimiento":4.3,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":126,"attributes":{"marca":"Maxus","modelo":"E-Deliver 9 L3 Camioneta","capacidad":65.2,"autonomia":131,"createdAt":"2024-10-18T18:25:14.397Z","updatedAt":"2024-10-18T18:25:14.926Z","publishedAt":"2024-10-18T18:25:14.920Z","rendimiento":2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":127,"attributes":{"marca":"Maxus","modelo":"E-Deliver 9 L4 Camioneta","capacidad":65.2,"autonomia":131,"createdAt":"2024-10-18T18:25:40.884Z","updatedAt":"2024-10-18T18:25:41.370Z","publishedAt":"2024-10-18T18:25:41.368Z","rendimiento":2,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":128,"attributes":{"marca":"Maxus","modelo":"EG50 AT EV","capacidad":52.5,"autonomia":215,"createdAt":"2024-10-18T18:26:03.976Z","updatedAt":"2024-10-18T18:26:04.516Z","publishedAt":"2024-10-18T18:26:04.514Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":129,"attributes":{"marca":"Maxus","modelo":"EG50 AT EV 5 Pasajeros","capacidad":52.5,"autonomia":215,"createdAt":"2024-10-18T18:26:31.049Z","updatedAt":"2024-10-18T18:26:31.466Z","publishedAt":"2024-10-18T18:26:31.462Z","rendimiento":4.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":130,"attributes":{"marca":"Tesla","modelo":"Model 3 Long Range AWD","capacidad":75,"autonomia":629,"createdAt":"2024-11-20T18:25:23.899Z","updatedAt":"2024-11-20T18:25:26.024Z","publishedAt":"2024-11-20T18:25:26.015Z","rendimiento":8.4,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":131,"attributes":{"marca":"Tesla","modelo":"Model 3 Rear-Wheel Drive","capacidad":57.5,"autonomia":513,"createdAt":"2024-11-20T18:26:10.722Z","updatedAt":"2024-11-20T18:26:11.451Z","publishedAt":"2024-11-20T18:26:11.445Z","rendimiento":8.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":132,"attributes":{"marca":"Tesla","modelo":"Model Y","capacidad":67.7,"autonomia":514,"createdAt":"2024-11-20T18:28:59.417Z","updatedAt":"2024-11-20T18:28:59.969Z","publishedAt":"2024-11-20T18:28:59.965Z","rendimiento":7.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":133,"attributes":{"marca":"Tesla","modelo":"Model Y Long Range AWD","capacidad":75,"autonomia":565,"createdAt":"2024-11-20T18:30:00.875Z","updatedAt":"2024-11-20T18:30:01.888Z","publishedAt":"2024-11-20T18:30:01.885Z","rendimiento":7.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":134,"attributes":{"marca":"Tesla","modelo":"Model Y Rear-Wheel Drive","capacidad":60,"autonomia":455,"createdAt":"2024-11-20T18:30:41.334Z","updatedAt":"2024-11-20T18:30:41.890Z","publishedAt":"2024-11-20T18:30:41.886Z","rendimiento":7.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":135,"attributes":{"marca":"Tesla","modelo":"Model X","capacidad":75,"autonomia":485,"createdAt":"2024-11-20T18:32:34.600Z","updatedAt":"2024-11-20T18:32:35.156Z","publishedAt":"2024-11-20T18:32:35.150Z","rendimiento":5.1,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":136,"attributes":{"marca":"Tesla","modelo":"Model X Plaid","capacidad":95,"autonomia":465,"createdAt":"2024-11-20T18:33:48.095Z","updatedAt":"2024-11-20T18:33:48.601Z","publishedAt":"2024-11-20T18:33:48.596Z","rendimiento":4.9,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":137,"attributes":{"marca":"Tesla","modelo":"Model S","capacidad":100,"autonomia":646,"createdAt":"2024-11-20T18:35:23.067Z","updatedAt":"2024-11-20T18:35:23.597Z","publishedAt":"2024-11-20T18:35:23.594Z","rendimiento":6.5,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}},{"id":138,"attributes":{"marca":"Tesla","modelo":"Model S Plaid","capacidad":100,"autonomia":560,"createdAt":"2024-11-20T18:36:02.820Z","updatedAt":"2024-11-20T18:36:03.482Z","publishedAt":"2024-11-20T18:36:03.478Z","rendimiento":5.6,"T1":0,"T2":1,"T2SC":1,"GPTDC":0,"CHADEMO":0,"CCST2":0,"tipo":"Eléctrico Puro"}}],"meta":{"pagination":{"page":1,"pageSize":1000,"pageCount":1,"total":138}}}
         // if (!response.ok) {throw new Error('No se pudo extraer la información de los vehículos desde Strapi');}
         
         // Convert response to JSON
@@ -555,7 +559,7 @@ const Map = () => {
     setSelectedVehiculo(selectedValue);
     setAutonomy(selectedValue.autonom);
     if (isVisible) {
-      setAutonomia(selectedValue.autonom)
+      setAutonomia(selectedValue.autonom/2*0.8)
     } else{
       setAutonomia(1)
     }
@@ -1005,7 +1009,7 @@ const CreatePane = () => {
 };
 
 const handleChange = (event, newValue) => {
-  setAutonomia(newValue); // Ensure state is updated
+  setAutonomia(newValue/2*0.8); // Ensure state is updated
 };
 
 const handleAutonomyChange = (event) => {
@@ -1062,6 +1066,8 @@ const rows = [
 
 const StarRating = ({ locationIdx, ratings, handleRatingChange }) => {
   const [hover, setHover] = useState(null);
+
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -1209,6 +1215,45 @@ function valuetext(value) {
   return `${value}°C`;
 }
 
+const fetchGeoJSON = () => {
+  fetch(
+    "https://raw.githubusercontent.com/fcortes/Chile-GeoJSON/refs/heads/master/Regional.geojson"
+  )
+    .then((resp) => resp.json())
+    .then((data) => {
+      console.log(data);
+      setGeoJSON(data);
+      
+    });
+};
+
+useEffect(() => {
+  fetchGeoJSON();
+}, []);
+
+function style(feature) {
+  return {
+    fillColor: "transparent",
+    weight: 0.5,
+    opacity: 1,
+    color: "cyan", //Outline color
+    fillOpacity: 1
+  };
+}
+
+const [disableFirstTwo, setDisableFirstTwo] = useState(true);
+const [disableLastTwo, setDisableLastTwo] = useState(false);
+
+  const toggleFirstTwo = () => {
+    setDisableFirstTwo(true);
+    setDisableLastTwo(false); // Ensure no conflict
+  };
+
+  const toggleLastTwo = () => {
+    setDisableLastTwo(true);
+    setDisableFirstTwo(false); // Ensure no conflict
+  };
+
 
 
 
@@ -1355,7 +1400,7 @@ sx={{
   }}
 >
   {/* Título */}
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle}} align="center" style={{ marginTop: '1%' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente,  fontSize: sizeBoxTitle}} align="center" style={{ marginTop: '1%'}}>
     Filtros de Búsqueda
   </Typography>
   
@@ -1371,6 +1416,14 @@ sx={{
       borderRadius: '20px',
     }}
   >
+    <div style={{ marginBottom: 5, marginTop: 0, display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+  <Button variant="contained" color="primary" onClick={toggleLastTwo}>
+    Por parámetros
+  </Button>
+  <Button variant="contained" color="primary" onClick={toggleFirstTwo}>
+    Por vehículo
+  </Button>
+</div>
 
     {/* Grid Superior */}
     <Grid
@@ -1378,7 +1431,7 @@ sx={{
       direction="column"
       justifyContent="center"
       sx={{
-        height: '100%',
+        height: '90%',
         width: '100%',
         padding: {
           xs: '2px', // Padding for extra small screens
@@ -1392,12 +1445,12 @@ sx={{
 
       {/* Primer elemento: Autonomía */}
       <Grid item xs style={{ textAlign: 'center' }}>
-        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig}} variant="h7" align="center">
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig}} style ={{opacity: disableFirstTwo ? 0.5 : 1}} variant="h7" align="center">
           Indique Autonomía del vehículo
         </Typography>
 
         <Slider
-          value={autonomia}
+          value={Math.round(autonomia * 2 / 0.8)}
           min={80}
           max={580}
           aria-label="Custom marks"
@@ -1405,6 +1458,7 @@ sx={{
           valueLabelDisplay="auto" // Only show the label when active (hover or during drag)
           getAriaValueText={valuetext}
           marks={marks}
+          disabled={disableFirstTwo}
           sx={{
             color: colorBtn,
             height: 6,
@@ -1425,7 +1479,7 @@ sx={{
       {/* Segundo elemento: Tipo de cargador */}
       <Grid item xs style={{ textAlign: 'center' }} 
       sx={{padding:paddingBox}}>
-        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+        <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px', opacity: disableFirstTwo ? 0.5 : 1 }}>
           Indique tipo de cargador
         </Typography>
 
@@ -1437,6 +1491,7 @@ sx={{
             MozAppearance: 'none', // Remove default arrow for Firefox
           }}
           closeMenuOnSelect={false}
+          isDisabled={disableFirstTwo}
           isMulti
           options={cargadores}
           value={selectedOptions}
@@ -1451,6 +1506,7 @@ sx={{
       <input
         type="text"
         placeholder="Indique palabra clave"
+        disabled={disableFirstTwo}
 
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)} // Update search query
@@ -1460,6 +1516,7 @@ sx={{
           backgroundColor: elementInt,   // Light blue background color
           border: '1px solid #00796B',  // Add a border for clarity
           borderRadius: '5px',
+          opacity: disableFirstTwo ? 0.5 : 1
         }}
       />
     </Grid>
@@ -1468,6 +1525,7 @@ sx={{
       {/* Button with different background color */}
       <Button
         onClick={handleSearch}
+        disabled={disableFirstTwo}
         sx = {{sizeBtn}}
         style={{
           width: '100%',               // Take full width of the grid item
@@ -1477,6 +1535,7 @@ sx={{
           border: 'none',              // Remove default border
           borderRadius: '5px',         // Rounded corners
           cursor: 'pointer',           // Pointer cursor for interaction
+          opacity: disableFirstTwo ? 0.5 : 1
         }}
       >
         Buscar
@@ -1487,13 +1546,14 @@ sx={{
 
 <Grid item xs style={{ textAlign: 'center' }}
 sx={{padding:paddingBox}}>
-  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px' }}>
+  <Typography sx={{ color: colorLetras, fontWeight: pesoFuente, fontFamily: fuente, fontSize: sizeBig }} variant="h7" align="center" style={{ marginBottom: '10px', opacity: disableLastTwo ? 0.5 : 1}}>
     Seleccione vehículo
   </Typography>
   <Select
         labelId="vehiculo-select-label"
         id="vehiculo-select"
         value={selectedVehiculo}
+        isDisabled = {disableLastTwo}
         label="Vehiculo Modelo"
         onChange={handleSelectVehiculo}
         options = {vehiculosOptions}
@@ -1505,7 +1565,10 @@ sx={{padding:paddingBox}}>
 
       <Grid item xs sx={{padding:paddingBox}}>
       <TableContainer component={Paper}>
-      <Table sx={{ border: '1px solid white', borderRadius: '15px',}} aria-label="customized table">
+      <Table sx={{ border: '1px solid white', borderRadius: '15px',}} style={{
+              pointerEvents: disableLastTwo ? 'none' : 'auto',
+              opacity: disableLastTwo ? 0.5 : 1,
+            }} aria-label="customized table">
         <TableHead>
           <TableRow>
             <StyledTableCell><StyledTableCell>{'Tipo de Vehículo'}</StyledTableCell></StyledTableCell>
@@ -1917,38 +1980,2068 @@ sx={{padding:paddingBox}}>
         />
       {/*polygons.map((polygon, index) => (<Polygon key={index} positions={polygon.getLatLngs()} color="blue" weight={2} />))*/}
       {renderFilteredLocations()}
-        <FeatureGroup>
-          <EditControl
-            position="topright"
-            onCreated={_onCreate}
-            onEdited={_onEdited}
-            onDeleted={_onDeleted}
-            draw={{
-              rectangle: false,
-              polyline: false,
-              circle: false,
-              circlemarker: false,
-              marker: false,
-            }}
-          />
-        </FeatureGroup>
-        <FeatureGroup>
+
+      <FeatureGroup>
+        <EditControl
+          position="topright"
+          onCreated={(e) => console.log(e)}
+          onEdited={(e) => console.log(e)}
+          onDeleted={(e) => console.log(e)}
+          draw={{
+            rectangle: false,
+            polyline: false,
+            circle: false,
+            circlemarker: false,
+            marker: false,
+          }}
+        />
+      </FeatureGroup>
+
+      <FeatureGroup>
+        {/* Render circles and clipped polygons for all filtered locations */}
         {Array.isArray(filteredLocations) &&
-          filteredLocations.map((location) => (
-            <Circle
-              center={[location.lat, location.lon]}
-              radius={autonomia*1000} // Adjust the radius as needed
-              color="#5390D9"
-              fillColor="#5390D9" // Bright cyan fill
-              fillOpacity={1}
-              pane="circlesPane" // Use a custom pane to prevent overlapping opacity
-              weight={1}
-              eventHandlers={{
-                click: () => handleMarkerClick(location),
-              }}
-            >
-              
-              <Popup>
+          filteredLocations.map((location) => {
+            const circle = turf.circle([location.lon, location.lat], autonomia, {
+              steps: 64,
+              units: 'kilometers',
+            });
+
+            const polygonCoords = [
+              [-71.9, -30.6], // point 1 (near Valparaíso)
+              [-70.7, -30.6], // point 2
+              [-70.7, -33.3], // point 3
+              [-71.9, -33.3], // point 4
+              [-71.9, -30.6], // point 5 (closing the loop, same as point 1)
+            ];
+            
+
+            // Convert polygon coordinates to a Turf.js polygon
+            const polygon = turf.polygon([polygonCoords]);
+            // const polygon  = turf.multiPolygon(geoJSON.coordinates);
+
+            // Log the polygon to see the structure
+
+            // Calculate the intersection of the circle and the polygon
+            const Geo = {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "properties": {},
+                  "geometry": {
+                    "coordinates": [
+                      [
+                        [
+                          -70.37333480698805,
+                          -18.355225447779134
+                        ],
+                        [
+                          -70.29657151539307,
+                          -18.445019274946162
+                        ],
+                        [
+                          -70.33633107756685,
+                          -18.48802233963019
+                        ],
+                        [
+                          -70.30886197642721,
+                          -18.522383658120475
+                        ],
+                        [
+                          -70.34297049069724,
+                          -18.57034754054041
+                        ],
+                        [
+                          -70.33871330560679,
+                          -18.665842793148784
+                        ],
+                        [
+                          -70.35086975794495,
+                          -18.789891981455412
+                        ],
+                        [
+                          -70.30195839975504,
+                          -18.999578019463627
+                        ],
+                        [
+                          -70.25949498811835,
+                          -19.180373819201378
+                        ],
+                        [
+                          -70.28274576907438,
+                          -19.31865564114601
+                        ],
+                        [
+                          -70.23554833173682,
+                          -19.45461250814901
+                        ],
+                        [
+                          -70.20644734824815,
+                          -19.57096271231137
+                        ],
+                        [
+                          -70.23343731137284,
+                          -19.608208806947147
+                        ],
+                        [
+                          -70.17313265104745,
+                          -19.664483770374048
+                        ],
+                        [
+                          -70.12887519912728,
+                          -19.96522334309745
+                        ],
+                        [
+                          -70.14294701720846,
+                          -20.15421900251515
+                        ],
+                        [
+                          -70.15705216662005,
+                          -20.225471210881125
+                        ],
+                        [
+                          -70.13315826211169,
+                          -20.29616375042984
+                        ],
+                        [
+                          -70.18387627412913,
+                          -20.365046120086276
+                        ],
+                        [
+                          -70.18885992218888,
+                          -20.542347105866384
+                        ],
+                        [
+                          -70.2068174605336,
+                          -20.623736151231256
+                        ],
+                        [
+                          -70.19212818579685,
+                          -20.667699669431286
+                        ],
+                        [
+                          -70.18990017027777,
+                          -20.81419300770996
+                        ],
+                        [
+                          -70.12806516374391,
+                          -20.938680803498485
+                        ],
+                        [
+                          -70.17338984302648,
+                          -21.014358188253752
+                        ],
+                        [
+                          -70.06748458534697,
+                          -21.2981583622076
+                        ],
+                        [
+                          -70.09279728401474,
+                          -21.360517501932662
+                        ],
+                        [
+                          -70.06015631349456,
+                          -21.441183033320158
+                        ],
+                        [
+                          -70.08896285197027,
+                          -21.493041124850293
+                        ],
+                        [
+                          -70.06903252830851,
+                          -21.542968261573435
+                        ],
+                        [
+                          -70.13022567370814,
+                          -21.651607777979137
+                        ],
+                        [
+                          -70.16156460777738,
+                          -21.77777921225602
+                        ],
+                        [
+                          -70.13461056491066,
+                          -21.845118456012017
+                        ],
+                        [
+                          -70.17923156155885,
+                          -21.9262862001778
+                        ],
+                        [
+                          -70.22866252525432,
+                          -22.147665994708433
+                        ],
+                        [
+                          -70.25699058247898,
+                          -22.466972151189054
+                        ],
+                        [
+                          -70.23196418263593,
+                          -22.516573623017138
+                        ],
+                        [
+                          -70.2847800536692,
+                          -22.570324905936957
+                        ],
+                        [
+                          -70.26350768194976,
+                          -22.65162552901964
+                        ],
+                        [
+                          -70.30501908840243,
+                          -22.657952349818615
+                        ],
+                        [
+                          -70.28920799701184,
+                          -22.733944411617074
+                        ],
+                        [
+                          -70.3257084872441,
+                          -22.8277316092464
+                        ],
+                        [
+                          -70.28294105633158,
+                          -22.917988055886084
+                        ],
+                        [
+                          -70.47852606094357,
+                          -23.110485366104342
+                        ],
+                        [
+                          -70.55435336925751,
+                          -23.05923648045814
+                        ],
+                        [
+                          -70.59918915819702,
+                          -23.27489545514777
+                        ],
+                        [
+                          -70.6220534186415,
+                          -23.511502124629217
+                        ],
+                        [
+                          -70.51393675780352,
+                          -23.523756823163367
+                        ],
+                        [
+                          -70.49882279964098,
+                          -23.472048796945558
+                        ],
+                        [
+                          -70.3840625373835,
+                          -23.591472183834654
+                        ],
+                        [
+                          -70.50449494327304,
+                          -23.82137066830343
+                        ],
+                        [
+                          -70.52294827257994,
+                          -24.27876688098665
+                        ],
+                        [
+                          -70.56318953717631,
+                          -24.509626318857173
+                        ],
+                        [
+                          -70.549873458071,
+                          -24.63039782664316
+                        ],
+                        [
+                          -70.57345564417243,
+                          -24.70636898760482
+                        ],
+                        [
+                          -70.5279584176202,
+                          -24.886852539215553
+                        ],
+                        [
+                          -70.46557339661183,
+                          -24.993548641634234
+                        ],
+                        [
+                          -70.50395437843486,
+                          -25.093284007785954
+                        ],
+                        [
+                          -70.4361018259317,
+                          -25.276228521163105
+                        ],
+                        [
+                          -70.50684955286071,
+                          -25.39641387543206
+                        ],
+                        [
+                          -70.54663373363816,
+                          -25.484312587763256
+                        ],
+                        [
+                          -70.63622384698976,
+                          -25.522230650900894
+                        ],
+                        [
+                          -70.64107892650156,
+                          -25.64219224495544
+                        ],
+                        [
+                          -70.69112563234607,
+                          -25.70279153083608
+                        ],
+                        [
+                          -70.71719419708845,
+                          -25.795655842221734
+                        ],
+                        [
+                          -70.63294172491412,
+                          -26.00903074803844
+                        ],
+                        [
+                          -70.66269091128147,
+                          -26.273789774772688
+                        ],
+                        [
+                          -70.63461465077948,
+                          -26.352977797616134
+                        ],
+                        [
+                          -70.70676955995216,
+                          -26.407365754991545
+                        ],
+                        [
+                          -70.69228026828031,
+                          -26.58197553549364
+                        ],
+                        [
+                          -70.75337079719917,
+                          -26.71000449100176
+                        ],
+                        [
+                          -70.81672125850456,
+                          -26.870878354163004
+                        ],
+                        [
+                          -70.79031085854658,
+                          -27.017188087851096
+                        ],
+                        [
+                          -70.92130548935918,
+                          -27.13464758346698
+                        ],
+                        [
+                          -70.97236736674837,
+                          -27.17511878169485
+                        ],
+                        [
+                          -70.95448349280386,
+                          -27.375277938097263
+                        ],
+                        [
+                          -70.89064856236338,
+                          -27.493754847571992
+                        ],
+                        [
+                          -70.96123213643534,
+                          -27.679596758280354
+                        ],
+                        [
+                          -71.04562493435009,
+                          -27.666994427927975
+                        ],
+                        [
+                          -71.16345492565765,
+                          -28.033887682700296
+                        ],
+                        [
+                          -71.18924665774432,
+                          -28.378355428325413
+                        ],
+                        [
+                          -71.29565271011376,
+                          -28.545205165341265
+                        ],
+                        [
+                          -71.29026351710152,
+                          -28.681965660133585
+                        ],
+                        [
+                          -71.52448827211988,
+                          -28.888662021332614
+                        ],
+                        [
+                          -71.47757132415344,
+                          -29.132909155123983
+                        ],
+                        [
+                          -71.45774794963901,
+                          -29.252315130665934
+                        ],
+                        [
+                          -71.33422572707953,
+                          -29.364529797786346
+                        ],
+                        [
+                          -71.29449104093591,
+                          -29.63661683322897
+                        ],
+                        [
+                          -71.32660212032862,
+                          -29.762553662099528
+                        ],
+                        [
+                          -71.28847015802106,
+                          -29.92289089948099
+                        ],
+                        [
+                          -71.39850381888263,
+                          -29.990804368206433
+                        ],
+                        [
+                          -71.40270620789812,
+                          -30.19295851008974
+                        ],
+                        [
+                          -71.4532822619864,
+                          -30.186721731656228
+                        ],
+                        [
+                          -71.61677421678769,
+                          -30.298631520374308
+                        ],
+                        [
+                          -71.63983830147097,
+                          -30.247456874807447
+                        ],
+                        [
+                          -71.72255423475204,
+                          -30.578457071160358
+                        ],
+                        [
+                          -71.65559967242606,
+                          -31.00895346829025
+                        ],
+                        [
+                          -71.66656994725676,
+                          -31.165137875914
+                        ],
+                        [
+                          -71.56332526277806,
+                          -31.541838003253496
+                        ],
+                        [
+                          -71.54737603050052,
+                          -31.721190961154058
+                        ],
+                        [
+                          -71.50602354199792,
+                          -31.787232805644074
+                        ],
+                        [
+                          -71.55043901198871,
+                          -31.855897338483587
+                        ],
+                        [
+                          -71.4804133720752,
+                          -31.893823310827358
+                        ],
+                        [
+                          -71.51218932274021,
+                          -31.931342632494122
+                        ],
+                        [
+                          -71.5450836845811,
+                          -32.20368999859779
+                        ],
+                        [
+                          -71.40370280619118,
+                          -32.4202451541683
+                        ],
+                        [
+                          -71.45622818051196,
+                          -32.527048776873606
+                        ],
+                        [
+                          -71.45803209300766,
+                          -32.707972563823695
+                        ],
+                        [
+                          -71.52345558604954,
+                          -32.724752185611095
+                        ],
+                        [
+                          -71.49510310663291,
+                          -32.782612235085864
+                        ],
+                        [
+                          -71.57477720587923,
+                          -32.7902157176852
+                        ],
+                        [
+                          -71.52527699039827,
+                          -32.9113719883451
+                        ],
+                        [
+                          -71.56999566252153,
+                          -33.03300166198069
+                        ],
+                        [
+                          -71.6546378246658,
+                          -33.035958189988754
+                        ],
+                        [
+                          -71.72848707022453,
+                          -33.09307233944682
+                        ],
+                        [
+                          -71.66180989445101,
+                          -33.3658272922778
+                        ],
+                        [
+                          -71.70434420220766,
+                          -33.424256936283705
+                        ],
+                        [
+                          -71.6054256840071,
+                          -33.560589252606285
+                        ],
+                        [
+                          -71.76911194737416,
+                          -33.77584070877791
+                        ],
+                        [
+                          -72.01649701381331,
+                          -34.13664435757314
+                        ],
+                        [
+                          -71.96919046267757,
+                          -34.36460489384076
+                        ],
+                        [
+                          -72.03935994048653,
+                          -34.42726122945611
+                        ],
+                        [
+                          -72.01424614236663,
+                          -34.498767115819824
+                        ],
+                        [
+                          -72.04763627343213,
+                          -34.55947427375174
+                        ],
+                        [
+                          -72.05794396077448,
+                          -34.71482863831
+                        ],
+                        [
+                          -72.1917978909953,
+                          -34.93709074954233
+                        ],
+                        [
+                          -72.21157851099747,
+                          -35.12291084482165
+                        ],
+                        [
+                          -72.39886964521585,
+                          -35.240243029881576
+                        ],
+                        [
+                          -72.41408982107603,
+                          -35.33610652225928
+                        ],
+                        [
+                          -72.49804809644424,
+                          -35.39119992896847
+                        ],
+                        [
+                          -72.49300237964742,
+                          -35.48617081724118
+                        ],
+                        [
+                          -72.65454031877721,
+                          -35.59969103293347
+                        ],
+                        [
+                          -72.56656234940748,
+                          -35.79288843265659
+                        ],
+                        [
+                          -72.78565751944546,
+                          -35.99315786593326
+                        ],
+                        [
+                          -72.82535352365137,
+                          -36.19424673738798
+                        ],
+                        [
+                          -72.80533164618056,
+                          -36.28876305199484
+                        ],
+                        [
+                          -72.94695517045496,
+                          -36.54796686867864
+                        ],
+                        [
+                          -73.00585669912905,
+                          -36.58574436234174
+                        ],
+                        [
+                          -72.98804368589752,
+                          -36.700368652258106
+                        ],
+                        [
+                          -73.11349046265308,
+                          -36.61073524457748
+                        ],
+                        [
+                          -73.15895472214805,
+                          -36.75431101368981
+                        ],
+                        [
+                          -73.22249539504696,
+                          -36.78346115648433
+                        ],
+                        [
+                          -73.18767182102464,
+                          -36.98898277486508
+                        ],
+                        [
+                          -73.19551567992526,
+                          -37.16369589817081
+                        ],
+                        [
+                          -73.59111622903451,
+                          -37.15923053010323
+                        ],
+                        [
+                          -73.68272116653613,
+                          -37.353834250558805
+                        ],
+                        [
+                          -73.60178400387592,
+                          -37.5475738284521
+                        ],
+                        [
+                          -73.68425606222287,
+                          -37.625813735089764
+                        ],
+                        [
+                          -73.48954856365197,
+                          -38.00234327046918
+                        ],
+                        [
+                          -73.45563061873378,
+                          -38.20911983337221
+                        ],
+                        [
+                          -73.51360554636706,
+                          -38.288285725341275
+                        ],
+                        [
+                          -73.51803293838294,
+                          -38.375525533883874
+                        ],
+                        [
+                          -73.48306845424914,
+                          -38.66398143827108
+                        ],
+                        [
+                          -73.23738029649435,
+                          -39.238942653358855
+                        ],
+                        [
+                          -73.23744442025291,
+                          -39.45400784273822
+                        ],
+                        [
+                          -73.38188304538667,
+                          -39.698296372948235
+                        ],
+                        [
+                          -73.41161253891165,
+                          -39.837032439865496
+                        ],
+                        [
+                          -73.47339855942788,
+                          -39.85795090969864
+                        ],
+                        [
+                          -73.71085340479887,
+                          -39.99819426970335
+                        ],
+                        [
+                          -73.66245500884544,
+                          -40.14583969268965
+                        ],
+                        [
+                          -73.75765409834855,
+                          -40.35462015316938
+                        ],
+                        [
+                          -73.76222356710488,
+                          -40.509576323361195
+                        ],
+                        [
+                          -73.7233226288632,
+                          -40.590675948277394
+                        ],
+                        [
+                          -73.82323271298422,
+                          -40.672766736917204
+                        ],
+                        [
+                          -73.88716947363244,
+                          -40.8600106338815
+                        ],
+                        [
+                          -73.86451769827252,
+                          -40.93134795445131
+                        ],
+                        [
+                          -73.93428311745548,
+                          -40.97707622275487
+                        ],
+                        [
+                          -73.84363868225104,
+                          -41.43266807679091
+                        ],
+                        [
+                          -73.76716485104376,
+                          -41.566801470962744
+                        ],
+                        [
+                          -73.6666723249219,
+                          -41.60960814458692
+                        ],
+                        [
+                          -73.738469095234,
+                          -41.75508122121728
+                        ],
+                        [
+                          -73.32802165640868,
+                          -41.823628495112075
+                        ],
+                        [
+                          -74.03412090591782,
+                          -41.7727377392522
+                        ],
+                        [
+                          -74.04510521184346,
+                          -41.938544299217796
+                        ],
+                        [
+                          -74.05974496277014,
+                          -42.11226412711078
+                        ],
+                        [
+                          -74.18093950611234,
+                          -42.26109513540942
+                        ],
+                        [
+                          -74.16784303656456,
+                          -42.43538604557432
+                        ],
+                        [
+                          -74.11145239284171,
+                          -42.69448281417377
+                        ],
+                        [
+                          -74.21505540008219,
+                          -42.95663476694943
+                        ],
+                        [
+                          -74.37615524325777,
+                          -43.227290072414036
+                        ],
+                        [
+                          -74.83448827906597,
+                          -43.59662783308599
+                        ],
+                        [
+                          -74.78324911015983,
+                          -43.67672743116188
+                        ],
+                        [
+                          -74.1394962648535,
+                          -43.878735174196244
+                        ],
+                        [
+                          -74.34857662605856,
+                          -44.10998404355776
+                        ],
+                        [
+                          -74.41599810050369,
+                          -44.33065946309699
+                        ],
+                        [
+                          -74.576242374104,
+                          -44.47485353245124
+                        ],
+                        [
+                          -74.841021691947,
+                          -44.576983651226676
+                        ],
+                        [
+                          -75.19381835094711,
+                          -44.824989715381015
+                        ],
+                        [
+                          -75.11871578947087,
+                          -44.92119076754699
+                        ],
+                        [
+                          -74.62363770090404,
+                          -45.34950488716484
+                        ],
+                        [
+                          -74.53120336736241,
+                          -45.55398657621706
+                        ],
+                        [
+                          -74.86460822272409,
+                          -45.603371242483355
+                        ],
+                        [
+                          -74.92003987014444,
+                          -45.75656680582199
+                        ],
+                        [
+                          -74.83058995839606,
+                          -45.86264897228099
+                        ],
+                        [
+                          -75.06111264013147,
+                          -45.86537452352707
+                        ],
+                        [
+                          -75.05765223315191,
+                          -46.10565949901374
+                        ],
+                        [
+                          -75.13760741168035,
+                          -46.32823113650119
+                        ],
+                        [
+                          -75.39361077355971,
+                          -46.4670399386888
+                        ],
+                        [
+                          -75.59385121234413,
+                          -46.591628203318216
+                        ],
+                        [
+                          -75.62877869775191,
+                          -46.81187112645624
+                        ],
+                        [
+                          -75.44114913732325,
+                          -46.97170621570512
+                        ],
+                        [
+                          -75.22993800517999,
+                          -46.867963299199744
+                        ],
+                        [
+                          -75.00613645498503,
+                          -46.715413786504726
+                        ],
+                        [
+                          -74.63579114110549,
+                          -46.873289995601326
+                        ],
+                        [
+                          -74.4630174625707,
+                          -47.117314298469445
+                        ],
+                        [
+                          -74.70151881535303,
+                          -47.72977661652471
+                        ],
+                        [
+                          -74.97476590298356,
+                          -47.6586218395162
+                        ],
+                        [
+                          -75.31246586881413,
+                          -47.75870023770114
+                        ],
+                        [
+                          -75.48238312920297,
+                          -48.0820346250181
+                        ],
+                        [
+                          -75.48789697604764,
+                          -48.35829558639493
+                        ],
+                        [
+                          -75.61126914227074,
+                          -48.5242497123706
+                        ],
+                        [
+                          -75.60537156972529,
+                          -48.82941257469004
+                        ],
+                        [
+                          -75.67312416068127,
+                          -49.012486659341796
+                        ],
+                        [
+                          -75.52612978768948,
+                          -49.25247301023294
+                        ],
+                        [
+                          -75.43377090045647,
+                          -49.40425856729978
+                        ],
+                        [
+                          -75.56990284886894,
+                          -49.38412676694772
+                        ],
+                        [
+                          -75.62300035250159,
+                          -49.77168619442884
+                        ],
+                        [
+                          -75.58703175638618,
+                          -49.88381853067264
+                        ],
+                        [
+                          -75.38044614304287,
+                          -50.06637835516956
+                        ],
+                        [
+                          -75.52014417761373,
+                          -50.36205204856844
+                        ],
+                        [
+                          -75.49905571939298,
+                          -50.621575557553264
+                        ],
+                        [
+                          -75.3801325111349,
+                          -50.82219265146904
+                        ],
+                        [
+                          -75.25190468734216,
+                          -50.819762835360216
+                        ],
+                        [
+                          -75.02719281970286,
+                          -50.99095716286985
+                        ],
+                        [
+                          -75.19160070186803,
+                          -51.35939127244383
+                        ],
+                        [
+                          -75.33381662832593,
+                          -51.57241854851725
+                        ],
+                        [
+                          -75.18818322227006,
+                          -51.649492402722025
+                        ],
+                        [
+                          -75.11635918783222,
+                          -51.93726560356648
+                        ],
+                        [
+                          -74.9820146289055,
+                          -52.163640468113535
+                        ],
+                        [
+                          -74.84798615430854,
+                          -52.34713346784482
+                        ],
+                        [
+                          -74.58902989225831,
+                          -52.47007534505302
+                        ],
+                        [
+                          -74.70868040655552,
+                          -52.75195958647409
+                        ],
+                        [
+                          -74.55770241490275,
+                          -52.98570933131769
+                        ],
+                        [
+                          -74.40237267706394,
+                          -53.14308729936033
+                        ],
+                        [
+                          -74.2531653706145,
+                          -53.367468049278614
+                        ],
+                        [
+                          -73.88674175631972,
+                          -53.463507432484796
+                        ],
+                        [
+                          -73.77664805109058,
+                          -53.69270832593118
+                        ],
+                        [
+                          -73.42722790690362,
+                          -54.05784587226095
+                        ],
+                        [
+                          -73.34165386774131,
+                          -54.17796442724971
+                        ],
+                        [
+                          -72.94599560404586,
+                          -54.24461935786225
+                        ],
+                        [
+                          -72.6659101507842,
+                          -54.372676465765124
+                        ],
+                        [
+                          -72.35208599377106,
+                          -54.51568622824459
+                        ],
+                        [
+                          -71.97235864984512,
+                          -54.7582783022357
+                        ],
+                        [
+                          -71.20485754804008,
+                          -55.06199839183844
+                        ],
+                        [
+                          -70.5922110973822,
+                          -55.21111097971232
+                        ],
+                        [
+                          -69.62911084152537,
+                          -55.498981307751784
+                        ],
+                        [
+                          -68.98163351259942,
+                          -55.66206265262569
+                        ],
+                        [
+                          -67.31961688163356,
+                          -55.98538314837349
+                        ],
+                        [
+                          -67.05190344812752,
+                          -55.90215016675483
+                        ],
+                        [
+                          -67.36624172334068,
+                          -55.546560648104844
+                        ],
+                        [
+                          -67.97138827789536,
+                          -55.440371259550425
+                        ],
+                        [
+                          -68.17467107664477,
+                          -55.34471734980711
+                        ],
+                        [
+                          -67.89961040292744,
+                          -55.261978809654835
+                        ],
+                        [
+                          -67.35523599730996,
+                          -55.342474615276046
+                        ],
+                        [
+                          -66.71620452167126,
+                          -55.344703472533325
+                        ],
+                        [
+                          -66.36723904170148,
+                          -55.21485271848301
+                        ],
+                        [
+                          -66.39186851434435,
+                          -55.120231397384714
+                        ],
+                        [
+                          -66.68043004533837,
+                          -55.09902804058388
+                        ],
+                        [
+                          -66.81827054202616,
+                          -54.98394271800167
+                        ],
+                        [
+                          -67.21099752014013,
+                          -54.91935357494234
+                        ],
+                        [
+                          -67.83425847299216,
+                          -54.88149698874215
+                        ],
+                        [
+                          -68.65653518771182,
+                          -54.90147014384421
+                        ],
+                        [
+                          -68.61390119444962,
+                          -52.631793456966236
+                        ],
+                        [
+                          -68.4237636610682,
+                          -52.33224845851845
+                        ],
+                        [
+                          -69.94286090965348,
+                          -52.005583292793354
+                        ],
+                        [
+                          -71.93455853548423,
+                          -51.99120465138308
+                        ],
+                        [
+                          -71.93753690230342,
+                          -51.854583258861865
+                        ],
+                        [
+                          -72.20649774833178,
+                          -51.700024759871596
+                        ],
+                        [
+                          -72.31377437701077,
+                          -51.60532219435316
+                        ],
+                        [
+                          -72.46211967370924,
+                          -51.57862372824097
+                        ],
+                        [
+                          -72.34026313139972,
+                          -51.48081090021581
+                        ],
+                        [
+                          -72.36888547215536,
+                          -51.31340187664597
+                        ],
+                        [
+                          -72.25302744767986,
+                          -51.20208476700729
+                        ],
+                        [
+                          -72.37600117188306,
+                          -51.05961976680473
+                        ],
+                        [
+                          -72.2289636865996,
+                          -50.88676342380415
+                        ],
+                        [
+                          -72.3135278259573,
+                          -50.62986420162412
+                        ],
+                        [
+                          -72.82281571380841,
+                          -50.630041296333374
+                        ],
+                        [
+                          -73.19095678014082,
+                          -50.79699370016393
+                        ],
+                        [
+                          -73.29086190780683,
+                          -50.82382035243756
+                        ],
+                        [
+                          -73.15887209559521,
+                          -50.67674397332509
+                        ],
+                        [
+                          -73.3661717632396,
+                          -50.54588592077611
+                        ],
+                        [
+                          -73.49775497594442,
+                          -50.32951180602287
+                        ],
+                        [
+                          -73.5481480729629,
+                          -50.15908408539257
+                        ],
+                        [
+                          -73.46242766796162,
+                          -50.05865125185289
+                        ],
+                        [
+                          -73.56020167432108,
+                          -49.88367417618184
+                        ],
+                        [
+                          -73.44324643831115,
+                          -49.74769880336509
+                        ],
+                        [
+                          -73.53525063734828,
+                          -49.61405700759852
+                        ],
+                        [
+                          -73.57611952678765,
+                          -49.488571536670506
+                        ],
+                        [
+                          -73.43669439384341,
+                          -49.4103649080456
+                        ],
+                        [
+                          -73.41520623441966,
+                          -49.276201119586126
+                        ],
+                        [
+                          -73.5336114988782,
+                          -49.22024056093028
+                        ],
+                        [
+                          -73.06609275653365,
+                          -49.286329410037375
+                        ],
+                        [
+                          -73.11683088398041,
+                          -49.24056085203522
+                        ],
+                        [
+                          -72.94545659963866,
+                          -48.96064060145093
+                        ],
+                        [
+                          -72.63678543535235,
+                          -48.84098566984351
+                        ],
+                        [
+                          -72.55212896074171,
+                          -48.460478297210784
+                        ],
+                        [
+                          -72.33450880488527,
+                          -48.469784726539366
+                        ],
+                        [
+                          -72.35180586129147,
+                          -48.34236371307818
+                        ],
+                        [
+                          -72.25510202481581,
+                          -48.286476220180326
+                        ],
+                        [
+                          -72.34844209015706,
+                          -48.10088740761479
+                        ],
+                        [
+                          -72.45351345535337,
+                          -48.023293744707445
+                        ],
+                        [
+                          -72.45374259835845,
+                          -47.93248242911797
+                        ],
+                        [
+                          -72.57094038043869,
+                          -47.9040499453134
+                        ],
+                        [
+                          -72.47787872619703,
+                          -47.73166163871963
+                        ],
+                        [
+                          -72.31051596803037,
+                          -47.58715688773346
+                        ],
+                        [
+                          -72.29935212522227,
+                          -47.44387656032126
+                        ],
+                        [
+                          -72.1465135311898,
+                          -47.356444699438185
+                        ],
+                        [
+                          -71.95769681876838,
+                          -47.21103723618008
+                        ],
+                        [
+                          -71.86818614003249,
+                          -47.20821880033452
+                        ],
+                        [
+                          -71.9144761024385,
+                          -46.97471830391934
+                        ],
+                        [
+                          -71.91782235411253,
+                          -46.802438273692
+                        ],
+                        [
+                          -71.66066668848909,
+                          -46.64646215451588
+                        ],
+                        [
+                          -71.70179645828834,
+                          -46.34693401511486
+                        ],
+                        [
+                          -71.74223982201444,
+                          -46.19327221077484
+                        ],
+                        [
+                          -71.90249181734903,
+                          -46.13646829161101
+                        ],
+                        [
+                          -71.57582844347058,
+                          -45.93673754149594
+                        ],
+                        [
+                          -71.7207874476111,
+                          -45.837867493375946
+                        ],
+                        [
+                          -71.7398608570735,
+                          -45.61988739961144
+                        ],
+                        [
+                          -71.60912077782139,
+                          -45.50276857476801
+                        ],
+                        [
+                          -71.44525298434897,
+                          -45.4596806205653
+                        ],
+                        [
+                          -71.45222871144425,
+                          -45.36448647522638
+                        ],
+                        [
+                          -71.3422163328101,
+                          -45.23593539922962
+                        ],
+                        [
+                          -71.55597294630819,
+                          -45.01297398328028
+                        ],
+                        [
+                          -71.86062037447255,
+                          -44.94647140691575
+                        ],
+                        [
+                          -72.07587900590892,
+                          -44.82415308237836
+                        ],
+                        [
+                          -71.79742062735954,
+                          -44.770977124972525
+                        ],
+                        [
+                          -71.3389893286433,
+                          -44.76291615969516
+                        ],
+                        [
+                          -71.17792287745779,
+                          -44.71545849421812
+                        ],
+                        [
+                          -71.11184991731527,
+                          -44.52515274741042
+                        ],
+                        [
+                          -71.32142477349313,
+                          -44.378723567995735
+                        ],
+                        [
+                          -71.80685190834829,
+                          -44.33993476056515
+                        ],
+                        [
+                          -71.80985301923458,
+                          -44.171204023080676
+                        ],
+                        [
+                          -71.7200274431966,
+                          -44.01189833069088
+                        ],
+                        [
+                          -71.64500331110675,
+                          -43.83778526581666
+                        ],
+                        [
+                          -71.75004632077336,
+                          -43.75867215908803
+                        ],
+                        [
+                          -71.57009877021423,
+                          -43.68807503775466
+                        ],
+                        [
+                          -71.7135512219914,
+                          -43.58218975614082
+                        ],
+                        [
+                          -71.85113553796778,
+                          -43.4972086598784
+                        ],
+                        [
+                          -71.89408708762824,
+                          -43.359963623754474
+                        ],
+                        [
+                          -71.76034801897313,
+                          -43.31107350774891
+                        ],
+                        [
+                          -71.84223980339337,
+                          -43.13156315076283
+                        ],
+                        [
+                          -72.12942977481443,
+                          -42.880460509096956
+                        ],
+                        [
+                          -72.1629936099305,
+                          -42.64258009463022
+                        ],
+                        [
+                          -72.01819284571152,
+                          -42.42521400768891
+                        ],
+                        [
+                          -72.11845720983807,
+                          -42.29872948703776
+                        ],
+                        [
+                          -72.1607250586577,
+                          -42.15997736900878
+                        ],
+                        [
+                          -71.9650734250621,
+                          -42.13966044879614
+                        ],
+                        [
+                          -71.7691662729943,
+                          -42.12509507743432
+                        ],
+                        [
+                          -71.725637088616,
+                          -42.00019201443504
+                        ],
+                        [
+                          -71.77065796407213,
+                          -41.87125647172238
+                        ],
+                        [
+                          -71.8199365599504,
+                          -41.665321415866494
+                        ],
+                        [
+                          -71.89554037322452,
+                          -41.29634654355466
+                        ],
+                        [
+                          -71.79580316919052,
+                          -41.100823532603805
+                        ],
+                        [
+                          -71.84913328506843,
+                          -40.892505531605174
+                        ],
+                        [
+                          -71.94894780465633,
+                          -40.68252197698287
+                        ],
+                        [
+                          -71.79499978439996,
+                          -40.51564505832409
+                        ],
+                        [
+                          -71.7783648523586,
+                          -40.38685377637086
+                        ],
+                        [
+                          -71.58548245544925,
+                          -40.30282513296731
+                        ],
+                        [
+                          -71.82397224191209,
+                          -40.18665195273738
+                        ],
+                        [
+                          -71.70439909053319,
+                          -40.07679631226392
+                        ],
+                        [
+                          -71.66465439858229,
+                          -39.991988223525816
+                        ],
+                        [
+                          -71.6032796055395,
+                          -39.84729786937367
+                        ],
+                        [
+                          -71.69851750348853,
+                          -39.66764218350886
+                        ],
+                        [
+                          -71.6787988909887,
+                          -39.51591504290724
+                        ],
+                        [
+                          -71.56325361407401,
+                          -39.6019251800942
+                        ],
+                        [
+                          -71.49616808305883,
+                          -39.575971727922465
+                        ],
+                        [
+                          -71.4316467612509,
+                          -39.34977809905775
+                        ],
+                        [
+                          -71.36711266130688,
+                          -39.1125677040478
+                        ],
+                        [
+                          -71.44984000990466,
+                          -38.8642760296265
+                        ],
+                        [
+                          -70.952683796776,
+                          -38.75465374163886
+                        ],
+                        [
+                          -70.80865478861526,
+                          -38.48112403222261
+                        ],
+                        [
+                          -70.95307346982322,
+                          -38.34112689581813
+                        ],
+                        [
+                          -70.98214164844538,
+                          -38.140069137416084
+                        ],
+                        [
+                          -71.15234334159234,
+                          -37.69017299002439
+                        ],
+                        [
+                          -71.15382029409308,
+                          -37.4063381184587
+                        ],
+                        [
+                          -71.20323038761131,
+                          -37.24583208663126
+                        ],
+                        [
+                          -71.10640716092524,
+                          -37.00830025343889
+                        ],
+                        [
+                          -71.10021466490056,
+                          -36.95562297754376
+                        ],
+                        [
+                          -71.09807855344422,
+                          -36.68724658442092
+                        ],
+                        [
+                          -70.99647011061334,
+                          -36.63464934705355
+                        ],
+                        [
+                          -71.05699928840937,
+                          -36.48547751692205
+                        ],
+                        [
+                          -70.79565264057936,
+                          -36.39493585462083
+                        ],
+                        [
+                          -70.6545335248944,
+                          -36.26968936654602
+                        ],
+                        [
+                          -70.43015025531206,
+                          -36.12194871892394
+                        ],
+                        [
+                          -70.36763728190078,
+                          -35.89102799157046
+                        ],
+                        [
+                          -70.35292077441066,
+                          -35.68412596772479
+                        ],
+                        [
+                          -70.42406757833031,
+                          -35.507682765357735
+                        ],
+                        [
+                          -70.41688806717643,
+                          -35.355785502411564
+                        ],
+                        [
+                          -70.55275013857549,
+                          -35.277734078975634
+                        ],
+                        [
+                          -70.35809549914795,
+                          -35.135196165806555
+                        ],
+                        [
+                          -70.28994002971157,
+                          -34.823150706759854
+                        ],
+                        [
+                          -70.13108564894391,
+                          -34.47657660919582
+                        ],
+                        [
+                          -69.96951171692307,
+                          -34.269766420940456
+                        ],
+                        [
+                          -69.83413828437904,
+                          -34.250509391329174
+                        ],
+                        [
+                          -69.84547539629199,
+                          -33.99397243214488
+                        ],
+                        [
+                          -69.85831958468287,
+                          -33.703125932482436
+                        ],
+                        [
+                          -69.80849949449671,
+                          -33.3840583877999
+                        ],
+                        [
+                          -69.73985971944205,
+                          -33.32116710428323
+                        ],
+                        [
+                          -69.84502501937897,
+                          -33.285097554623434
+                        ],
+                        [
+                          -69.98518432844175,
+                          -33.28478186539944
+                        ],
+                        [
+                          -70.04301996416191,
+                          -33.212381778009984
+                        ],
+                        [
+                          -70.07923605344216,
+                          -33.07267404637059
+                        ],
+                        [
+                          -70.06328775293927,
+                          -33.00677251634304
+                        ],
+                        [
+                          -70.00975521574222,
+                          -32.8861767406032
+                        ],
+                        [
+                          -70.17205415149525,
+                          -32.63182443922781
+                        ],
+                        [
+                          -70.24145715965892,
+                          -32.41407831112
+                        ],
+                        [
+                          -70.24463064122035,
+                          -32.33506794750263
+                        ],
+                        [
+                          -70.32944835660808,
+                          -32.23275476765506
+                        ],
+                        [
+                          -70.36584817723318,
+                          -32.07975745496318
+                        ],
+                        [
+                          -70.24907103091606,
+                          -32.01050380270611
+                        ],
+                        [
+                          -70.20649071249032,
+                          -31.9113895036949
+                        ],
+                        [
+                          -70.42642921854714,
+                          -31.84967825345857
+                        ],
+                        [
+                          -70.51355339721418,
+                          -31.63739771446015
+                        ],
+                        [
+                          -70.51466935004156,
+                          -31.38945364058442
+                        ],
+                        [
+                          -70.50011401962908,
+                          -31.142860765374778
+                        ],
+                        [
+                          -70.4090422167781,
+                          -31.098576283725876
+                        ],
+                        [
+                          -70.31946970359255,
+                          -31.144255542434898
+                        ],
+                        [
+                          -70.25073181517202,
+                          -31.023774789724555
+                        ],
+                        [
+                          -70.26860091667781,
+                          -30.886562802674135
+                        ],
+                        [
+                          -70.22852831366374,
+                          -30.69836515815407
+                        ],
+                        [
+                          -70.1532506611272,
+                          -30.44934666128583
+                        ],
+                        [
+                          -70.15525104668261,
+                          -30.342768602077463
+                        ],
+                        [
+                          -69.96595031774872,
+                          -30.366100793405067
+                        ],
+                        [
+                          -69.9021638966571,
+                          -30.25248694092045
+                        ],
+                        [
+                          -69.80528932524207,
+                          -30.18885634643923
+                        ],
+                        [
+                          -69.9191572917265,
+                          -30.088042850442022
+                        ],
+                        [
+                          -69.88903583622849,
+                          -29.949645725853735
+                        ],
+                        [
+                          -69.928755404662,
+                          -29.702118292536213
+                        ],
+                        [
+                          -69.92734833872417,
+                          -29.525173568977586
+                        ],
+                        [
+                          -69.97147440456587,
+                          -29.390976686604603
+                        ],
+                        [
+                          -70.00111232601157,
+                          -29.301202595684487
+                        ],
+                        [
+                          -69.82801048800525,
+                          -29.105929949733643
+                        ],
+                        [
+                          -69.67027335000365,
+                          -28.75241255301858
+                        ],
+                        [
+                          -69.70275343306344,
+                          -28.589998429850688
+                        ],
+                        [
+                          -69.65321520339408,
+                          -28.38241423530613
+                        ],
+                        [
+                          -69.40927016059807,
+                          -28.20438774697387
+                        ],
+                        [
+                          -69.1687376849755,
+                          -27.98765403500842
+                        ],
+                        [
+                          -69.10389864288204,
+                          -27.83897954397124
+                        ],
+                        [
+                          -69.02226280896969,
+                          -27.62363503248907
+                        ],
+                        [
+                          -68.82923754470853,
+                          -27.181250013284462
+                        ],
+                        [
+                          -68.7101088406876,
+                          -27.098576307997718
+                        ],
+                        [
+                          -68.47458713549733,
+                          -27.102125239064485
+                        ],
+                        [
+                          -68.33327787660077,
+                          -26.975877704747568
+                        ],
+                        [
+                          -68.41260204638505,
+                          -26.745260108296236
+                        ],
+                        [
+                          -68.61050008226186,
+                          -26.37744664242316
+                        ],
+                        [
+                          -68.4806894315373,
+                          -26.227105279589686
+                        ],
+                        [
+                          -68.32425855227662,
+                          -26.129067029608244
+                        ],
+                        [
+                          -68.52112042447783,
+                          -25.558501697282367
+                        ],
+                        [
+                          -68.4982264618467,
+                          -25.17843909265042
+                        ],
+                        [
+                          -68.33792841023258,
+                          -25.062710530696975
+                        ],
+                        [
+                          -68.45923054568672,
+                          -24.86799510598769
+                        ],
+                        [
+                          -68.57494723276278,
+                          -24.787501256636588
+                        ],
+                        [
+                          -68.40907560364404,
+                          -24.528228607616597
+                        ],
+                        [
+                          -68.13522414620373,
+                          -24.355394249844736
+                        ],
+                        [
+                          -67.35309281670673,
+                          -24.018272391550525
+                        ],
+                        [
+                          -67.00087566932234,
+                          -23.00980202200458
+                        ],
+                        [
+                          -67.19163839335847,
+                          -22.795965408781512
+                        ],
+                        [
+                          -67.85151240623752,
+                          -22.86026490138029
+                        ],
+                        [
+                          -67.83491812584285,
+                          -22.573957951329845
+                        ],
+                        [
+                          -67.97178862185356,
+                          -22.26661450154758
+                        ],
+                        [
+                          -67.94718918188117,
+                          -22.001634158281803
+                        ],
+                        [
+                          -68.07568892842488,
+                          -21.928412661034102
+                        ],
+                        [
+                          -68.07501975354363,
+                          -21.77845897869001
+                        ],
+                        [
+                          -68.17955592654762,
+                          -21.575140612117394
+                        ],
+                        [
+                          -68.19437439222179,
+                          -21.30184391765617
+                        ],
+                        [
+                          -68.44443331706103,
+                          -20.907096154931494
+                        ],
+                        [
+                          -68.54818986089069,
+                          -20.753281330565272
+                        ],
+                        [
+                          -68.43195715242783,
+                          -20.641950852985772
+                        ],
+                        [
+                          -68.66762288906433,
+                          -20.48710819623919
+                        ],
+                        [
+                          -68.70240350213244,
+                          -20.34230713401149
+                        ],
+                        [
+                          -68.69847446959929,
+                          -20.17146926047488
+                        ],
+                        [
+                          -68.80333116349661,
+                          -20.054847338829205
+                        ],
+                        [
+                          -68.58553202869295,
+                          -19.999995912158724
+                        ],
+                        [
+                          -68.53057826004252,
+                          -19.820283213835324
+                        ],
+                        [
+                          -68.62400584078294,
+                          -19.68058877112246
+                        ],
+                        [
+                          -68.40429196295027,
+                          -19.406282434456358
+                        ],
+                        [
+                          -68.92723592603002,
+                          -18.937337628126627
+                        ],
+                        [
+                          -68.97314407581786,
+                          -18.69469421506291
+                        ],
+                        [
+                          -69.01940630330348,
+                          -18.43581552465122
+                        ],
+                        [
+                          -69.05427659220507,
+                          -18.250135326874243
+                        ],
+                        [
+                          -69.09707787575381,
+                          -18.1084602281572
+                        ],
+                        [
+                          -69.06181160135876,
+                          -18.04120595578128
+                        ],
+                        [
+                          -69.24955965359919,
+                          -17.946872507140952
+                        ],
+                        [
+                          -69.36348492795618,
+                          -17.72043466093683
+                        ],
+                        [
+                          -69.49752855085131,
+                          -17.497065061267804
+                        ],
+                        [
+                          -69.68553152226683,
+                          -17.626852425723058
+                        ],
+                        [
+                          -69.80692439393921,
+                          -17.64630244363883
+                        ],
+                        [
+                          -69.86219210210851,
+                          -17.791392424854152
+                        ],
+                        [
+                          -69.8022310203524,
+                          -17.93503249210623
+                        ],
+                        [
+                          -69.78201004516406,
+                          -18.096032498881385
+                        ],
+                        [
+                          -70.1773693455161,
+                          -18.29797025981871
+                        ],
+                        [
+                          -70.37333480698805,
+                          -18.355225447779134
+                        ]
+                      ]
+                    ],
+                    "type": "Polygon"
+                  }
+                }
+              ]
+            }
+            const multiPolyg = (turf.multiPolygon(Geo.features[0].geometry.coordinates))
+            const intersection = turf.intersect(turf.featureCollection([circle, multiPolyg]));
+
+            // If there's no intersection, skip rendering this location
+            if (!intersection) return null;
+
+            // Convert intersection geometry back to Leaflet format
+            const clippedCoords = intersection.geometry.coordinates[0].map(([lon, lat]) => [lat, lon]);
+
+            return (
+              <>
+                {/* Invisible Circle (Interactive) */}
+                <Circle
+                  center={[location.lat, location.lon]}
+                  radius={autonomia}
+                  color="transparent"
+                  fillColor="transparent"
+                  eventHandlers={{
+                    click: () => handleMarkerClick(location),
+                  }}
+                >
+                  
+                </Circle>
+
+                {/* Clipped Circle (Visible as Polygon) */}
+                {clippedCoords.length > 0 && (
+                  <Polygon
+                    positions={clippedCoords}
+                    color="#5390D9"
+                    fillColor="#5390D9"
+                    pane = "circlesPane"
+                    fillOpacity={0.8}
+                    weight={1}
+                  />
+                )}
+                <Popup>
         <div>
           <h3>{location.nombre}</h3>
           <p>{location.direccion}</p>
@@ -2008,12 +4101,14 @@ sx={{padding:paddingBox}}>
           </div>
         </div>
       </Popup>
-            </Circle>
-          ))}
+              </>
+            );
+          })}
       </FeatureGroup>
         {polygonPoints.length > 0 && (
           <Polygon positions={polygonPoints} color="blue" fillOpacity={0.5} />
         )}
+        {geoJSON && <GeoJSON data={geoJSON} style={style} />}
       </MapContainer>
   </div>
       
